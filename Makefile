@@ -20,6 +20,10 @@ endif
 # COMMANDS                                                                      #
 #################################################################################
 
+## Download datasets
+download:
+	cat ./data/external/sources | shuf | xargs -n10 -P4 wget -P ./data/external/ -q --show-progress --continue
+	
 ## Install Python Dependencies
 requirements: test_environment
 	$(PYTHON_INTERPRETER) -m pip install -U pip setuptools wheel
