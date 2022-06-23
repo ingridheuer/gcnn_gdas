@@ -22,7 +22,13 @@ endif
 
 ## Download datasets
 download:
-	cat ./data/external/sources | shuf | xargs -n10 -P4 wget -P ./data/external/ -q --show-progress --continue
+	cat ./src/data/sources_manual;
+	#descargando datasets en ./data/external
+	cat ./src/data/sources | shuf | xargs -n10 -P4 wget -P ./data/external/ -q --show-progress --continue
+	cd ./data/external/sources/ && \
+	mv 6180616 edges.csv
+	mv 6180617 nodes.tab
+	mv 6180618 desease_features.tab
 	
 ## Install Python Dependencies
 requirements: test_environment
