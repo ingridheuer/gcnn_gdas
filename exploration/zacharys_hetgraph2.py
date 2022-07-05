@@ -1,4 +1,5 @@
 #%%
+from sympy import true
 import torch
 from torch_sparse import matmul
 from torch_sparse import SparseTensor
@@ -25,25 +26,15 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import copy
 from torch.utils.tensorboard import SummaryWriter
-#%%
-def edgeindex_to_sparsematrix(het_graph: HeteroGraph) -> dict : 
-    sparse_edge_dict = {}
-    for key in het_graph.edge_index:
-        temp_edge_index = het_graph.edge_index[key]
-        from_type = key[0]
-        to_type = key[2]
-        adj = SparseTensor(row=temp_edge_index[0], col=temp_edge_index[1], sparse_sizes=(het_graph.num_nodes(from_type), het_graph.num_nodes(to_type)))
-        sparse_edge_dict[key] = adj.t()
-    return sparse_edge_dict
-
 # %%
 debugging = False
 
 def my_debug(arg):
     if debugging:
         print(arg)
-#%%
-#OLD DICT STYLE
+# %%
+# region MODEL CLASS DEFINITION (GRAPH STYLE)
+
 class HeteroGNNConv(pyg_nn.MessagePassing):
     def __init__(self, in_channels_src, in_channels_dst, out_channels):
         super().__init__(aggr="mean")
@@ -149,10 +140,9 @@ def generate_convs(hetero_graph, conv, hidden_size, first_layer=False):
 
 
 class HeteroGNN(torch.nn.Module):
-    def __init__(self, hetero_graph_dict, args, aggr="mean"):
+    def __init__(self, hetero_graph, args, aggr="mean"):
         super().__init__()
 
-        hetero_graph = hetero_graph_dict["graph"]
         self.aggr = aggr
         self.hidden_size = args['hidden_size']
         self.bns1 = torch.nn.ModuleDict()
@@ -174,10 +164,8 @@ class HeteroGNN(torch.nn.Module):
             self.relus1[node_type] = torch.nn.LeakyReLU()
             self.relus2[node_type] = torch.nn.LeakyReLU()
 
-    def forward(self, graph_dict):
-        #x, adj, edge_label_index = graph_dict["graph"].node_feature, graph_dict["adj"], graph_dict["graph"].edge_label_index
-        x,edge_label_index = graph_dict["graph"].node_feature, graph_dict["graph"].edge_label_index
-        adj = edgeindex_to_sparsematrix(graph_dict["graph"])
+    def forward(self, data):
+        x, adj, edge_label_index = data.node_feature, data.sparse_mat, data.edge_label_index
         x = self.convs1(x, edge_indices=adj)
         x = deepsnap.hetero_gnn.forward_op(x, self.bns1)
         x = deepsnap.hetero_gnn.forward_op(x, self.relus1)
@@ -205,19 +193,20 @@ class HeteroGNN(torch.nn.Module):
             p = torch.sigmoid(pred[key])
             loss += self.loss_fn(p, y[key].type(pred[key].dtype))
         return loss
-#%%
-#DICT VER
-def train(model, optimizer, graph_dict, printb):
+# endregion
+# %%
+# region DEF TRAIN AND TEST FUNCTIONS GRAPH VER
+
+def train(model, optimizer, dataset, printb):
     model.train()
     optimizer.zero_grad()
-    preds = model(graph_dict)
-    loss = model.loss(preds, graph_dict["graph"].edge_label)
+    preds = model(dataset[0])
+    loss = model.loss(preds, dataset[0].edge_label)
     loss.backward()
     optimizer.step()
     if printb:
         print(loss.item())
     return loss.item()
-
 
 # Test function
 def test(model, graph_dict, args):
@@ -226,17 +215,17 @@ def test(model, graph_dict, args):
     for mode, dataset in graph_dict.items():
         acc = 0
         num = 0
-        pred = model(dataset)
+        pred = model(dataset[0])
         for key in pred:
             p = torch.sigmoid(pred[key]).cpu().detach().numpy()
             pred_label = np.zeros_like(p, dtype=np.int64)
             pred_label[np.where(p > 0.5)[0]] = 1
             pred_label[np.where(p <= 0.5)[0]] = 0
-            acc += np.sum(pred_label == dataset["graph"].edge_label[key].cpu().numpy())
+            acc += np.sum(pred_label == dataset[0].edge_label[key].cpu().numpy())
             num += len(pred_label)
         accs[mode] = acc / num
     return accs
-
+# endregion
 #%%
 # region build graph
 G = nx.karate_club_graph()
@@ -269,34 +258,36 @@ hete = HeteroGraph(G)
 #%%
 #region split dataset
 #extra pre-processing to make data compatible with model, for GraphSAGE we need to input edge indices as sparse matrices, but deepsnap works with tensors. We're going to pass a dictionary as argument to the model
-#OLD DICT CASE
+def edgeindex_to_sparsematrix(het_graph: HeteroGraph): 
+    sparse_edge_dict = {}
+    for key in het_graph.edge_index:
+        temp_edge_index = het_graph.edge_index[key]
+        from_type = key[0]
+        to_type = key[2]
+        adj = SparseTensor(row=temp_edge_index[0], col=temp_edge_index[1], sparse_sizes=(het_graph.num_nodes(from_type), het_graph.num_nodes(to_type)))
+        sparse_edge_dict[key] = adj.t()
+        het_graph["sparse_mat"] = sparse_edge_dict
+
+#hete.apply_transform(edgeindex_to_sparsematrix,update_graph=True, update_tensor=False)
+
 task = 'link_pred'
 dataset = GraphDataset([hete], task=task, edge_train_mode="all")
 dataset_train, dataset_val, dataset_test = dataset.split(transductive=True, split_ratio=[0.4, 0.3, 0.3])
 
-#traing,valg,testg = dataset_train[0], dataset_val[0],dataset_test[0]
-datasets = {"train":dataset_train, "val":dataset_val, "test":dataset_test}
-
-# def edgeindex_to_sparsematrix(het_graph: HeteroGraph) -> dict : 
-#     sparse_edge_dict = {}
-#     for key in het_graph.edge_index:
-#         temp_edge_index = het_graph.edge_index[key]
-#         from_type = key[0]
-#         to_type = key[2]
-#         adj = SparseTensor(row=temp_edge_index[0], col=temp_edge_index[1], sparse_sizes=(het_graph.num_nodes(from_type), het_graph.num_nodes(to_type)))
-#         sparse_edge_dict[key] = adj.t()
-#     return sparse_edge_dict
-
-# sparse_dict = {title:{"graph":dataset[0], "adj": edgeindex_to_sparsematrix(dataset[0])} for title,dataset in datasets.items()}
-
-# fullgraph_sparse_dict = {"graph":hete, "adj":edgeindex_to_sparsematrix(hete)}
+# dataset_train.apply_transform(edgeindex_to_sparsematrix, deep_copy=True)
+# dataset_val.apply_transform(edgeindex_to_sparsematrix)
+# dataset_test.apply_transform(edgeindex_to_sparsematrix)
+# hete.apply_transform(edgeindex_to_sparsematrix)
 
 
-sparse_dict = {title:{"graph":dataset[0], "adj":[]} for title,dataset in datasets.items()}
+dataset_train.apply_transform(edgeindex_to_sparsematrix)
+dataset_val.apply_transform(edgeindex_to_sparsematrix)
+dataset_test.apply_transform(edgeindex_to_sparsematrix)
+hete.apply_transform(edgeindex_to_sparsematrix)
+#para ver como quedo
+#dataset_train.graphs[0].keys
+dataset_dict = {"train":dataset_train,"val":dataset_val,"test":dataset_test}
 
-fullgraph_sparse_dict = {"graph":hete, "adj":[]}
-
-#endregion
 #%%
 #region train
 args = {
@@ -306,82 +297,26 @@ args = {
     'weight_decay': 1e-5,
     'lr': 0.003,
 }
-model = HeteroGNN(fullgraph_sparse_dict, args, aggr="mean")
+model = HeteroGNN(hete, args, aggr="mean")
 optimizer = torch.optim.Adam(model.parameters(), lr=args['lr'], weight_decay=args['weight_decay'])
-#%%
-#train(model,optimizer,sparse_dict["train"])
 
 #%%
 loss_plot = []
 epochs = 2000
 for epoch in range(epochs):
     if epoch%10 == 0:
-       loss = train(model,optimizer,sparse_dict["train"],printb=True)
+       loss = train(model,optimizer,dataset_dict["train"],printb=True)
     else:
-        loss = train(model,optimizer,sparse_dict["train"],printb=False)
+        loss = train(model,optimizer,dataset_dict["train"],printb=False)
     loss_plot.append(loss)
 
 plt.plot(np.arange(len(loss_plot)),loss_plot)
 #%%
 #veo una predicción
-p = model(sparse_dict["val"])
+p = model(dataset_val[0])
 prediction = {edgetype:torch.round(torch.sigmoid(pred)) for edgetype,pred in p.items()}
 ground_truth = dataset_val[0].edge_label
 
-test(model,sparse_dict,args)
+test(model,dataset_dict,args)
 
 #%%
-#TODO implementar negative custom sampling, para que tome casos entre tipos que no se pueden unir 
-#viendo como ponerle custom negatives
-# hete.negative_edge = {}
-# hete.keys
-
-#
-# #me invento unos edges negativos
-# {key:None for key in hete.edge_index.keys()}
-
-# def graph_to_edge_list(G):
-#   # Implement the function that returns the edge list of
-#   # an nx.Graph. The returned edge_list should be a list of tuples
-#   # where each tuple is a tuple representing an edge connected 
-#   # by two nodes.
-#   edge_list = [e for e in G.edges]
-#   return edge_list
-
-# def edge_list_to_tensor(edge_list):
-#   Implement the function that transforms the edge_list to
-#   # tensor. The input edge_list is a list of tuples and the resulting
-#   # tensor should have the shape [2 x len(edge_list)].
-  
-#   sources = torch.LongTensor([e[0] for e in edge_list])
-#   targets = torch.LongTensor([e[1] for e in edge_list])
-#   edge_index = torch.stack([sources,targets])
-
-#   return edge_index
-
-# pos_edgelist = graph_to_edge_list(G)
-# nodetype_dict = {node:attr['node_type'] for (node,attr) in list(G.nodes(data=True))}
-# nodetype_bag = {nodetype:hete._convert_to_graph_index(hete.node_label_index[nodetype], nodetype).tolist() for nodetype in hete.node_types}
-
-# false_edge_types = [('n0','e1','n0'),('n1','e0','n1'),('n0','e2','n0'),('n1','e2','n1')]
-# false_edge_types = {('n0', 'e0', 'n0'):[('n1','e0','n1'),('n0','e0','n1')], ('n0', 'e2', 'n1'):[('n0','e2','n0'),('n1','e2','n1')],('n1', 'e1', 'n1'):[('n1','e1','n0'),('n0','e1','n0')]}
-
-# neg_samples = {}
-# for msg_type in hete.message_types:
-#     src_type = msg_type[0]
-#     trg_type = msg_type[2]
-#     edge_type = msg_type[1]
-
-# def reverse(edge: tuple) -> tuple :
-#   return (edge[1],edge[0])
-
-# def sample_random_edge(msg_rule: tuple) -> tuple:
-#     src_type, trg_type = msg_rule[0], msg_rule[2]
-#     sample_src = np.random.choice(nodetype_bag[src_type])
-#     sample_trg = np.random.choice(nodetype_bag[trg_type])
-#     return (sample_src, sample_trg)
-
-# for msg_type in hete.message_types:
-#     false_rule = false_edge_types[msg_type][0]
-#     neg_sample = sample_random_edge(false_rule)
-#     print(msg_type, neg_sample)
