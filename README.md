@@ -1,8 +1,6 @@
 GCNN_for_GDAs
 ==============================
 
-Graph Convolutional Neural Networks for predictions of new gene-disease associations
-
 Project Organization
 ------------
 
