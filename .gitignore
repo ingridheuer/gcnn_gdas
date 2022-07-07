@@ -93,3 +93,4 @@ target/
 
 # Cosas de tensorboard
 */runs
+/runs/
