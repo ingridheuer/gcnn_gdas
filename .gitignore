@@ -92,5 +92,5 @@ target/
 *.Rhistory
 
 # Cosas de tensorboard
-*/runs
 /runs/
+*/runs
