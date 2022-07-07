@@ -90,7 +90,3 @@ target/
 
 # Cosas de R
 *.Rhistory
-
-# Cosas random
-*cachita
-*runs
