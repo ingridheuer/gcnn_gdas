@@ -90,3 +90,6 @@ target/
 
 # Cosas de R
 *.Rhistory
+
+# Cosas de tensorboard
+*/runs
