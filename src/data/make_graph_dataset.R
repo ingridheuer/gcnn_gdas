@@ -86,17 +86,23 @@ graph_node_table = data.table(node_id = character(), node_type = character(), no
 #agrego una columna con un indice para cada enlace
 disgenet_edges <- tibble::rowid_to_column(disgenet_gdas, "edge_index")
 disgenet_edge_table = make_edge_dt(disgenet_edges[,c("geneId","diseaseId","edge_index")],"GDA","gene/protein","disease","disgenet")
+disgenet_edge_table = merge(disgenet_edge_table, disgenet_edges[,c("edge_index","YearInitial","YearFinal","score")], by.x="source_idx",by.y="edge_index",all.y=FALSE,all.x=TRUE)
 
 #para armar la tabla de nodos agrego la columna de source y la de target, después saco los duplicados
 disgenet_src_nodes = disgenet_gdas[,c("geneId","geneSymbol")]
 disgenet_trg_nodes = disgenet_gdas[,c("diseaseId","diseaseName")]
 disgenet_node_table = make_node_dt(disgenet_src_nodes,disgenet_trg_nodes,"gene/protein","disease","disgenet")
+disgenet_node_table = merge(disgenet_node_table, disgenet_attr[,c("diseaseId","type","diseaseClassMSH","diseaseClassNameMSH")], by.x="node_id", by.y="diseaseId", all.y=FALSE,all.x=TRUE)
+setnames(disgenet_node_table,"type","disgenet_type")
 
 tests(disgenet_node_table,disgenet_edge_table)
+#van a quedar NAs en edge table porque algunos datos como yearinitial, yearfinal y attrs de enfermedades nestán vacíos
 
 # (6) edges de hippie ----
 hippie_edges <- tibble::rowid_to_column(hippie, "edge_index")
 hippie_edge_table = make_edge_dt(hippie_edges[SCORE >= 0.73 ,c("P1_ENTREZ_ID","P2_ENTREZ_ID","edge_index")],"PPI","gene/protein","gene/protein","hippie")
+hippie_edge_table = merge(hippie_edge_table, hippie_edges[,c("edge_index","SCORE")], by.x="source_idx",by.y="edge_index", all.y=FALSE, all.x=TRUE)
+setnames(hippie_edge_table, "SCORE","score")
 
 hippie_src_nodes = hippie[,c("P1_ENTREZ_ID","P1_NAME")]
 hippie_trg_nodes = hippie[,c("P2_ENTREZ_ID","P2_NAME")]
@@ -126,6 +132,8 @@ signor_edges <- tibble::rowid_to_column(signor, "edge_index")
 signor_ppi_edge_table = signor_edges[TYPEA == "protein" & TYPEB == "protein",c("ENTREZ_ID_A","ENTREZ_ID_B","edge_index")]
 signor_ppi_edge_table = signor_ppi_edge_table[complete.cases(signor_ppi_edge_table)]
 signor_ppi_edge_table = make_edge_dt(signor_ppi_edge_table[,c("ENTREZ_ID_A","ENTREZ_ID_B","edge_index")],"PPI","gene/protein","gene/protein","signor")
+signor_ppi_edge_table = merge(signor_ppi_edge_table, signor_edges[,c("edge_index","SCORE")], by.x="source_idx",by.y="edge_index", all.y=FALSE,all.x=TRUE)
+setnames(signor_ppi_edge_table, "SCORE","score")
 
 signor_src_nodes_ppi = signor[TYPEA == "protein" & TYPEB == "protein",c("ENTREZ_ID_A","ENTITYA")]
 signor_trg_nodes_ppi = signor[TYPEA == "protein" & TYPEB == "protein",c("ENTREZ_ID_B","ENTITYB")]
@@ -210,8 +218,8 @@ kg_edge_table = unique(kg_dd_edge_table,by=c("a_id","b_id"))
 tests(kg_node_table,kg_edge_table)
 
 # (11) Junto todos los dataframes  ----
-graph_node_table = do.call("rbind", list(disgenet_node_table,hippie_node_table,signor_ppi_node_table,signor_cp_node_table,kg_node_table))
-graph_edge_table = do.call("rbind", list(disgenet_edge_table,hippie_edge_table,signor_ppi_edge_table,signor_cp_edge_table,kg_edge_table))
+graph_node_table = do.call("rbind", list(disgenet_node_table,hippie_node_table,signor_ppi_node_table,signor_cp_node_table,kg_node_table, fill=TRUE))
+graph_edge_table = do.call("rbind", list(disgenet_edge_table,hippie_edge_table,signor_ppi_edge_table,signor_cp_edge_table,kg_edge_table, fill=TRUE))
 
 tests(graph_node_table,graph_edge_table)
 #probablemente porque el mismo nodo aparece en varios datasets, me puedo quedar con un solo caso para los nodos
@@ -247,7 +255,8 @@ graph_edge_table = merge(graph_edge_table,graph_node_table[,c("node_id","node_id
 setnames(graph_edge_table,old="node_idx",new="b_idx")
 
 tests(graph_node_table,graph_edge_table)
-graph_edge_table = graph_edge_table[,c("a_idx","b_idx","a_id","b_id","relation","a_type","b_type","source","source_idx")][order(source)]
+graph_edge_table = graph_edge_table[,c("a_idx","b_idx","a_id","b_id","relation","a_type","b_type","source","source_idx","score","YearInitial","YearFinal")][order(source)]
+#graph_edge_table = graph_edge_table[,c("a_idx","b_idx","a_id","b_id","relation","a_type","b_type","source","source_idx")][order(source)]
 graph_edge_table = tibble::rowid_to_column(graph_edge_table, "edge_idx")
 
 graph_node_table
@@ -267,7 +276,7 @@ write.csv(df, file=paste0(data_processed,"edgetype_directed.csv"))
 # glue("El dataset tiene {dim(graph_node_table)[1]} nodos y {dim(graph_edge_table)[1]} enlaces")
 # 
 # print("Nodos agrupados por tipo:")
-# table(graph_node_table$node_type)
+#table(graph_node_table$node_type)
 # 
 # print("Nodos agrupados por fuente: (conservé todos los de disgenet)")
 # table(graph_node_table$node_source)
