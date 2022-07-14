@@ -93,4 +93,5 @@ target/
 
 # Cosas de tensorboard
 /runs/
-*/runs
+*/runs/
+/src/models/runs

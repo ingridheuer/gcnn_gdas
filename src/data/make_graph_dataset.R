@@ -257,6 +257,12 @@ graph_edge_table
 write.csv(graph_node_table, file=paste0(data_processed,"graph_node_table.csv"))
 write.csv(graph_edge_table, file=paste0(data_processed,"graph_edge_table.csv"))
 
+#Armo tabla con tipos de enlace y directed=0 si es no dirigido, directed=1 si es dirigido
+edge_types = unique(graph_edge_table$relation)
+directed = c(0,0,0,0)
+df = data.frame(edge_types,directed)
+write.csv(df, file=paste0(data_processed,"edgetype_directed.csv"))
+
 # (13) Exploro como quedó el dataset *pasar esto a un notebook o un script de la carpeta exploration ----
 # glue("El dataset tiene {dim(graph_node_table)[1]} nodos y {dim(graph_edge_table)[1]} enlaces")
 # 
