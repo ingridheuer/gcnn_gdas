@@ -1,4 +1,4 @@
-GCNN_for_GDAs
+GraphNeuralNetworks_GDAs
 ==============================
 
 Project Organization
