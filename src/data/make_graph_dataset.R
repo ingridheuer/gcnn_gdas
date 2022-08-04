@@ -99,13 +99,19 @@ tests(disgenet_node_table,disgenet_edge_table)
 #van a quedar NAs en edge table porque algunos datos como yearinitial, yearfinal y attrs de enfermedades nestán vacíos
 
 # (6) edges de hippie ----
+
+#saco el "_HUMAN" de los nombres de las proteinas
+hippie[, P2_NAME := lapply(P2_NAME, function(x) {gsub("_HUMAN","",x)}), P2_NAME]
+hippie[, P1_NAME := lapply(P1_NAME, function(x) {gsub("_HUMAN","",x)}), P1_NAME]
+
 hippie_edges <- tibble::rowid_to_column(hippie, "edge_index")
 hippie_edge_table = make_edge_dt(hippie_edges[SCORE >= 0.73 ,c("P1_ENTREZ_ID","P2_ENTREZ_ID","edge_index")],"PPI","gene/protein","gene/protein","hippie")
-hippie_edge_table = merge(hippie_edge_table, hippie_edges[,c("edge_index","SCORE")], by.x="source_idx",by.y="edge_index", all.y=FALSE, all.x=TRUE)
+#hippie_edge_table = make_edge_dt(hippie_edges[,c("P1_ENTREZ_ID","P2_ENTREZ_ID","edge_index")],"PPI","gene/protein","gene/protein","hippie")
+hippie_edge_table = merge(hippie_edge_table, hippie_edges[SCORE >= 0.73,c("edge_index","SCORE")], by.x="source_idx",by.y="edge_index", all.y=FALSE, all.x=TRUE)
 setnames(hippie_edge_table, "SCORE","score")
 
-hippie_src_nodes = hippie[,c("P1_ENTREZ_ID","P1_NAME")]
-hippie_trg_nodes = hippie[,c("P2_ENTREZ_ID","P2_NAME")]
+hippie_src_nodes = hippie[SCORE >= 0.73,c("P1_ENTREZ_ID","P1_NAME")]
+hippie_trg_nodes = hippie[SCORE >= 0.73,c("P2_ENTREZ_ID","P2_NAME")]
 hippie_node_table = make_node_dt(hippie_src_nodes,hippie_trg_nodes,"gene/protein","gene/protein","hippie")
 
 tests(hippie_node_table, hippie_edge_table)
@@ -135,8 +141,11 @@ signor_ppi_edge_table = make_edge_dt(signor_ppi_edge_table[,c("ENTREZ_ID_A","ENT
 signor_ppi_edge_table = merge(signor_ppi_edge_table, signor_edges[,c("edge_index","SCORE")], by.x="source_idx",by.y="edge_index", all.y=FALSE,all.x=TRUE)
 setnames(signor_ppi_edge_table, "SCORE","score")
 
-signor_src_nodes_ppi = signor[TYPEA == "protein" & TYPEB == "protein",c("ENTREZ_ID_A","ENTITYA")]
-signor_trg_nodes_ppi = signor[TYPEA == "protein" & TYPEB == "protein",c("ENTREZ_ID_B","ENTITYB")]
+# signor_src_nodes_ppi = signor[TYPEA == "protein" & TYPEB == "protein" ,c("ENTREZ_ID_A","ENTITYA")]
+# signor_trg_nodes_ppi = signor[TYPEA == "protein" & TYPEB == "protein" ,c("ENTREZ_ID_B","ENTITYB")]
+
+signor_src_nodes_ppi = signor[ENTREZ_ID_A %in% signor_ppi_edge_table$a_id,c("ENTREZ_ID_A","ENTITYA")]
+signor_trg_nodes_ppi = signor[ENTREZ_ID_B %in% signor_ppi_edge_table$b_id,c("ENTREZ_ID_B","ENTITYB")]
 
 signor_ppi_node_table = make_node_dt(signor_src_nodes_ppi,signor_trg_nodes_ppi,"gene/protein","gene/protein","signor")
 
@@ -148,10 +157,13 @@ table(duplicated(signor_dups$source_idx)) #estaban duplicados en el original, po
 signor_ppi_edge_table = unique(signor_ppi_edge_table, by=c("a_id","b_id"))
 
 tests(signor_ppi_node_table,signor_ppi_edge_table)
+
 #(8) edges de signor- complex-protein ----
 signor_cp_edges = signor_edges[TYPEA == "protein" & TYPEB == "complex" & EFFECT == "form complex", c("ENTREZ_ID_A","IDB","edge_index")]
 signor_cp_edges = signor_cp_edges[complete.cases(signor_cp_edges),]
 signor_cp_edge_table = make_edge_dt(signor_cp_edges,"forms_complex","gene/protein","protein_complex","signor")
+signor_cp_edge_table = merge(signor_cp_edge_table, signor_edges[,c("edge_index","SCORE")], by.x="source_idx",by.y="edge_index", all.y=FALSE,all.x=TRUE)
+setnames(signor_cp_edge_table, "SCORE","score")
 
 signor_src_nodes_cp = signor[TYPEA == "protein" & TYPEB == "complex" & EFFECT == "form complex", c("ENTREZ_ID_A","ENTITYA")]
 signor_trg_nodes_cp = signor[TYPEA == "protein" & TYPEB == "complex" & EFFECT == "form complex", c("IDB","ENTITYB")]
@@ -191,7 +203,7 @@ glue("En el mapeo pierdo {dim(kg_single_disease_nodes)[1] - dim(kg_single_diseas
 CUI_kg_id_map = kg_single_disease_nodes_mapped[,c("node_index","CUI")]
 
 kg_dd_edges = kg_edges[relation == "disease_disease",c("x_index","y_index","edge_index")] #son todos display_relation = parent-child
-kg_dd_edges = merge(kg_dd_edges, CUI_kg_id_map, by.x = "x_index", by.y = "node_index", all.x = FALSE) #pierdo los que no tienen mapeo CUI
+kg_dd_edges = merge(kg_dd_edges, CUI_kg_id_map, by.x = "x_index", by.y = "node_index", all.x = FALSE) #pierdo los que no tienen mapeo CUI y/o son mondo grouped
 setnames(kg_dd_edges, old = "CUI", new = "x_CUI")
 
 kg_dd_edges = merge(kg_dd_edges, CUI_kg_id_map, by.x = "y_index", by.y = "node_index", all.x = FALSE) #pierdo los que no tienen mapeo CUI
@@ -200,10 +212,14 @@ setnames(kg_dd_edges, old = "CUI", new = "y_CUI")
 #Ahora si agrego los edges a mi dataset
 kg_dd_edge_table = make_edge_dt(kg_dd_edges[,c("x_CUI","y_CUI","edge_index")],"parent_child_mondo","disease","disease","primekg")
 
-kg_node_table = kg_single_disease_nodes_mapped[,c("CUI","node_name")]
-setnames(kg_node_table, old=colnames(kg_node_table),new=c("node_id","node_name"))
-kg_node_table[,"node_source"] = "primekg"
-kg_node_table[,"node_type"] = "disease"
+#kg_node_table = kg_single_disease_nodes_mapped[,c("CUI","node_name")]
+kg_src_nodes = kg_single_disease_nodes_mapped[(CUI %in% kg_dd_edge_table$a_id),c("CUI","node_name")]
+kg_trg_nodes = kg_single_disease_nodes_mapped[(CUI %in% kg_dd_edge_table$b_id),c("CUI","node_name")]
+kg_node_table = make_node_dt(kg_src_nodes,kg_trg_nodes,"disease","disease","primekg")
+
+#setnames(kg_node_table, old=colnames(kg_node_table),new=c("node_id","node_name"))
+# kg_node_table[,"node_source"] = "primekg"
+# kg_node_table[,"node_type"] = "disease"
 
 tests(kg_node_table,kg_dd_edge_table)
 
@@ -271,52 +287,3 @@ edge_types = unique(graph_edge_table$relation)
 directed = c(0,0,0,0)
 df = data.frame(edge_types,directed)
 write.csv(df, file=paste0(data_processed,"edgetype_directed.csv"))
-
-# (13) Exploro como quedó el dataset *pasar esto a un notebook o un script de la carpeta exploration ----
-# glue("El dataset tiene {dim(graph_node_table)[1]} nodos y {dim(graph_edge_table)[1]} enlaces")
-# 
-# print("Nodos agrupados por tipo:")
-#table(graph_node_table$node_type)
-# 
-# print("Nodos agrupados por fuente: (conservé todos los de disgenet)")
-# table(graph_node_table$node_source)
-# dim(disgenet_node_table)
-# 
-# print("Enlaces agrupados por tipo de enlace:")
-# table(graph_edge_table$relation)
-# 
-# print("Enlaces agrupados por tipos de nodo")
-# table(graph_edge_table[,c("a_type","b_type")])
-# 
-# print("Enlaces agrupados por fuente: prioridad PPIs HIPPIE, es decir, saqué ppis de signor que ya estaban en hippie")
-# table(graph_edge_table$source)
-# dim(disgenet_gdas)
-# dim(hippie)
-# dim(signor)
-# 
-# dim(kg_edges[relation == "disease_disease",])
-# dim(kg_grouped_disease_nodes)
-# dim(kg_single_disease_nodes)
-# dim(kg_nodes[node_type == "disease"])
-# print("PrimeKG tiene nodos enfermedad que son grupos obtenidos con BERT, esos no los agregué")
-# glue("Además en el mapeo perdí {dim(kg_single_disease_nodes)[1] - dim(kg_single_disease_nodes_mapped)[1]} nodos porque no están en el mapeo CUI-mondo")
-# 
-# print("Enlaces de primekg que involucraban a nodos *grupo* de enfermedades")
-# idx_grouped = kg_grouped_disease_nodes[,node_index]
-# dim(kg_edges[relation == "disease_disease" & (x_index %in% idx_grouped | y_index %in% idx_grouped) ,])
-# 
-# print("Self loops")
-# dim(graph_edge_table[a_idx == b_idx])
-# 
-# print("Los self loops son de:")
-# table(graph_edge_table[a_idx == b_idx, source])
-# graph_edge_table[a_idx == b_idx & source == "primekg",source_idx]
-# 
-# print("Nodos que me quedaron sin enlaces")
-# nodos_desconectados = graph_node_table[!(node_idx %in% graph_edge_table[,a_idx]) & !(node_idx %in% graph_edge_table[,b_idx]),]
-# nodos_desconectados
-# print("Son todos nodos de primekg y signor, revisar esto")
-# table(nodos_desconectados[,node_source])
-# 
-# #veo un ejemplo de los que quedaron afuera
-# table(kg_edges[(x_index == 40792 | y_index == 40792), relation])
