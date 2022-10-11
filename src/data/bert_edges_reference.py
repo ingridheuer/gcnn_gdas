@@ -11,12 +11,12 @@ graph_node_data = pd.read_csv(data_processed+"graph_data/grafo_alternativo_CG_no
 bert_mask = disease_mappings.group_id_bert.isna()
 mapa_nodos_bert = disease_mappings[~bert_mask]
 mapa_nodos_no_bert = disease_mappings[bert_mask]
-mapa_nodos_bert.sort_values(by="node_index")
+mapa_nodos_bert.sort_values(by="prime_node_index")
 
-nodos_bert = mapa_nodos_bert[["group_id_bert","group_name_bert","node_index"]].drop_duplicates(subset="group_id_bert").reset_index(drop=True)
+nodos_bert = mapa_nodos_bert[["group_id_bert","group_name_bert","prime_node_index"]].drop_duplicates(subset="group_id_bert").reset_index(drop=True)
 enlaces_bert_disgenet = mapa_nodos_bert[["diseaseId","group_id_bert"]].drop_duplicates().reset_index(drop=True)
 
-bert_node_data = nodos_bert.rename(columns={"group_id_bert":"node_id","group_name_bert":"node_name","node_index":"prime_node_index"})
+bert_node_data = nodos_bert.rename(columns={"group_id_bert":"node_id","group_name_bert":"node_name"})
 bert_node_data["node_type"] = "bert_group"
 bert_node_data["node_source"] = "primekg"
 
