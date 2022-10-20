@@ -95,6 +95,8 @@ target/
 /runs/
 */runs/
 /src/models/runs
+reports_backup/
+reports/
 reports/lsa/component_vobab_nodos.pkl
 reports/lsa/component_vocab_infomap.pkl
 reports/lsa/component_vocab_louvain.pkl
