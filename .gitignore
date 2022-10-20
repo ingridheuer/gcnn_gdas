@@ -235,3 +235,5 @@ reports_backup/tfidf/sim_media_trigramas.png
 reports_backup/tfidf/sim.png
 reports_backup/tfidf/similaridad_todos.png
 reports_backup/tfidf/tabla_ejemplo_pvalores.png
+reports_backup/*
+reports/*
