@@ -95,3 +95,10 @@ target/
 /runs/
 */runs/
 /src/models/runs
+reports/lsa/component_vobab_nodos.pkl
+reports/lsa/component_vocab_infomap.pkl
+reports/lsa/component_vocab_louvain.pkl
+reports/lsa/lsa_infomap_data.npz
+reports/lsa/lsa_louvain_data.npz
+reports/lsa/lsa_node_data.npz
+reports/lsa/lsa_node_similarity_matrix.npz
