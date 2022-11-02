@@ -12,13 +12,14 @@ pio.templates.default = "seaborn"
 sns.set_style("darkgrid", rc={'xtick.bottom': True})
 sns.set_context("paper")
 #%%
-data_processed = "../../data/processed/"
-data_interim = "../../data/interim/"
-data_external = "../../data/external/"
-tfidf_reports = "../../reports/tfidf/"
+data_processed = "../../../data/processed/"
+data_interim = "../../../data/interim/"
+data_external = "../../../data/external/"
+graph_data = data_processed + "graph_data_nohubs/"
+reports_tfidf = "../../reports/reports_nohubs/analisis_tfidf/"
 
-path_infomap = tfidf_reports+"entropia_random_infomap_mono.txt"
-path_louvain = tfidf_reports+"entropia_random_louvain_mono.txt"
+path_infomap = reports_tfidf+"entropia_random_infomap_mono.txt"
+path_louvain = reports_tfidf+"entropia_random_louvain_mono.txt"
 #%%
 entropia_random_infomap = 1 - np.loadtxt(path_infomap)
 entropia_random_louvain = 1 - np.loadtxt(path_louvain)
@@ -29,8 +30,8 @@ stds_random_infomap = [np.std(arr) for arr in np.array(entropia_random_infomap).
 means_random_louvain = [np.mean(arr) for arr in np.array(entropia_random_louvain).T]
 stds_random_louvain = [np.std(arr) for arr in np.array(entropia_random_louvain).T]
 #%%
-infomap_clusters = pd.read_pickle(tfidf_reports+"infomap_analysis_checkpoint.pkl")
-louvain_clusters = pd.read_pickle(tfidf_reports+"louvain_analysis_checkpoint.pkl")
+infomap_clusters = pd.read_pickle(reports_tfidf+"infomap_analysis_checkpoint.pkl")
+louvain_clusters = pd.read_pickle(reports_tfidf+"louvain_analysis_checkpoint.pkl")
 #%%
 ids_random_infomap = infomap_clusters.drop_duplicates(subset="tamaño").comunidad.values
 tamaños_random_infomap = infomap_clusters.set_index("comunidad").loc[ids_random_infomap,"tamaño"].values
