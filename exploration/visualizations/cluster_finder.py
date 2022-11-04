@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 #%%
 reports_tfidf = "../../reports/reports_nohubs/analisis_tfidf/"
+reports_lsa = "../../reports/reports_nohubs/analisis_lsa/"
 louvain_analysis = pd.read_pickle(reports_tfidf+"louvain_analysis_checkpoint.pkl")
 infomap_analysis = pd.read_pickle(reports_tfidf+"infomap_analysis_checkpoint.pkl")
 #%%
@@ -37,7 +38,7 @@ def find_cluster(partition, keyword:str):
 
     return result
 #%%
-find_cluster("louvain","carcinoma")
+find_cluster("louvain","retinitis")
 #%%
 data_processed = "../../data/processed/"
 data_external = "../../data/external/"
@@ -59,3 +60,5 @@ retinitis_ejemplos_ids = disease_attributes.set_index("node_index").loc[retiniti
 graph_edge_data.set_index("x_index").loc[retinitis_ejemplos]
 orig_disgenet.set_index("diseaseId").loc[retinitis_ejemplos_ids]
 curated_edges.set_index("diseaseId").loc[retinitis_ejemplos_ids]
+#%%
+node_labels = pd.read_csv(reports_lsa+"kmeans_clustering_labels.csv")
