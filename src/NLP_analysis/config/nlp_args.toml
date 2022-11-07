@@ -1,0 +1,10 @@
+# NLP analysis arguments
+
+[TFIDF]
+min_df = 2
+max_df = 0.3
+max_features = 8000
+custom_stopwords = ["disease","syndrome","congenital","disorder","type","association","abnormality","arise","include","omim","nih","hpo","characterize","pmid","24h","1st","2nd","3rd","i","ii","iii","iv","v","vi","vii","viii","ix","xiii"]
+
+[LSA]
+num_components = 250
