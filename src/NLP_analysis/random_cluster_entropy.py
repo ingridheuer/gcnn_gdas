@@ -135,7 +135,7 @@ nodes = graph_node_data.loc[graph_node_data.degree_dd != 0, "node_index"].reset_
 
 args = nlp_args["TFIDF"]
 stop_words = text.ENGLISH_STOP_WORDS.union(args["custom_stopwords"])
-vectorizers = [TfidfVectorizer(tokenizer = None , stop_words=stop_words, ngram_range=ngram_range, min_df=args["min_df"],max_df=args["max_df"],max_features=args["max_features"])for ngram_range in [(1,1),(2,2),(3,3)]]
+vectorizers = [TfidfVectorizer(tokenizer = None , stop_words=stop_words, ngram_range=ngram_range, min_df=args["min_df"],max_df=args["max_df"],max_features=args["max_features"])for ngram_range in [(1,1),(2,2),(3,3),(1,3)]]
 
 infomap_random_ids = infomap_clusters.sort_values(by="tamaño",ascending=False).drop_duplicates(subset="tamaño").comunidad.values
 louvain_random_ids = louvain_clusters.sort_values(by="tamaño",ascending=False).drop_duplicates(subset="tamaño").comunidad.values
@@ -149,3 +149,4 @@ results_infomap, results_louvain = random_cluster_entropy(100,nodes,clusters,vec
 
 results_infomap.to_csv(entropy_reports+"entropias_random_infomap.csv")
 results_louvain.to_csv(entropy_reports+"entropias_random_louvain.csv")
+# %%

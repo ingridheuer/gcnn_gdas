@@ -13,10 +13,14 @@ def get_cluster_dataframes(graph_node_data):
 
     return infomap_clusters, louvain_clusters
 
-def load_sparse_dataframe(matrix_path,row_path,column_path):
+def load_sparse_dataframe(matrix_path,row_path,column_path,str_cols=True):
     mat = sparse.load_npz(matrix_path)
     row = np.loadtxt(row_path)
-    col = np.loadtxt(column_path, dtype="str")
+    if str_cols:
+        col = np.loadtxt(column_path, dtype="str")
+    else:
+        col = np.loadtxt(column_path)
+
     df = pd.DataFrame.sparse.from_spmatrix(mat, index=row, columns=col)
     return df
 
@@ -65,3 +69,35 @@ def get_entropy(arr, use_nonzero=False,max_norm=True):
         S = round(entropy(values, base=2) , 2)
 
     return S
+
+def load_lsa_similiarity_matrices(path:str):
+    similarity_matrix = []
+
+    for i in range(4):
+        mat_path = f"{path}similarity_matrix_{i}.npz"
+        index_path = f"{path}matrix_index_{i}.txt"
+
+        similarity_matrix.append(load_sparse_dataframe(mat_path,index_path,index_path,str_cols=False))
+    
+    return similarity_matrix
+
+def get_cluster_nodelists(graph_node_data):
+    infomap_list = graph_node_data[["node_index","comunidades_infomap"]].dropna().groupby("comunidades_infomap")["node_index"].apply(list)
+    louvain_list = graph_node_data[["node_index","comunidades_louvain"]].dropna().groupby("comunidades_louvain")["node_index"].apply(list)
+
+    return infomap_list, louvain_list
+
+def mean_similarity(similarity_matrix, nodos_cluster):
+    cluster_matrix = similarity_matrix.loc[nodos_cluster,nodos_cluster].values
+    indices = np.triu_indices_from(cluster_matrix,1)
+    values = cluster_matrix[indices]
+    return round(np.mean(values), 2)
+
+def load_lsa_similiarity_matrices_sp(path:str):
+    similarity_matrix = []
+
+    for i in range(4):
+        mat_path = f"{path}similarity_matrix_{i}.npz"
+        similarity_matrix.append(sparse.load_npz(mat_path))
+    
+    return similarity_matrix
