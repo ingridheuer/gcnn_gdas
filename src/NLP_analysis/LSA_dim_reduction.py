@@ -8,6 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from scipy import sparse
 
 import config
+import nlp_utils
 #%%
 seed = 16
 random.seed(seed)
@@ -20,29 +21,6 @@ lsa_data_path = graph_data+"LSA_data/"
 args = config.nlp_args["LSA"]
 
 #%%
-def load_sparse_dataframe(matrix_path,row_path,column_path,cols_str=True):
-    mat = sparse.load_npz(matrix_path)
-    row = np.loadtxt(row_path)
-    if cols_str:
-        col = np.loadtxt(column_path, dtype="str")
-    else:
-        col = np.loadtxt(column_path)
-        
-    df = pd.DataFrame.sparse.from_spmatrix(mat, index=row, columns=col)
-    return df
-
-def load_node_matrices(path:str):
-    document_term_matrix = []
-    
-    for i in range(4):
-        mat_path = f"{path}matriz_nodos_tfidf_{i}.npz"
-        row_path = f"{path}rows_tfidf_nodos_{i}.txt"
-        col_path = f"{path}cols_tfidf_nodos_{i}.txt"
-
-        document_term_matrix.append(load_sparse_dataframe(mat_path, row_path, col_path))
-    
-    return document_term_matrix
-
 def tfidf_to_lsa(sparse_dtm):
     # dense_dtm = sparse_dtm.sparse.to_dense()
     mat_index = sparse_dtm.index.astype(int).values
@@ -75,7 +53,7 @@ def tfidf_to_lsa(sparse_dtm):
     return sparse_lsa,sparse_similarity_matrix, component_vocab, mat_index
 #%%
 print("Loading TFIDF matrices ...")
-document_term_matrix = load_node_matrices(graph_data+"tfidf_nodos/")
+document_term_matrix = nlp_utils.load_node_matrices(graph_data+"tfidf_nodos/")
 #%%
 for i, dtm in enumerate(document_term_matrix):
     print(f"LSA {i} ...")
