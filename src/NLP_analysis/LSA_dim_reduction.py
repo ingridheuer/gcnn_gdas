@@ -47,7 +47,7 @@ def tfidf_to_lsa(sparse_dtm):
     sparse_lsa = sparse.csr_matrix(lsa_matrix)
 
     print(f"Getting node similarity ...")
-    similarity_matrix = cosine_similarity(lsa_matrix,lsa_matrix)
+    similarity_matrix = np.triu(cosine_similarity(lsa_matrix,lsa_matrix),k=1)
     sparse_similarity_matrix = sparse.csr_matrix(similarity_matrix)
 
     return sparse_lsa,sparse_similarity_matrix, component_vocab, mat_index

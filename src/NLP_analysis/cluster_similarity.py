@@ -23,19 +23,25 @@ infomap_list, louvain_list = nlp_utils.get_cluster_nodelists(graph_node_data)
 #%%
 similarity_matrix = nlp_utils.load_lsa_similiarity_matrices(lsa_data_path)
 #%%
-def mean_similarity(similarity_matrix, nodos_cluster):
+# def mean_similarity(similarity_matrix, nodos_cluster):
+#     cluster_matrix = similarity_matrix.loc[nodos_cluster,nodos_cluster].values
+#     indices = np.triu_indices_from(cluster_matrix,1)
+#     values = cluster_matrix[indices]
+#     return round(np.mean(values), 2)
+
+def mean_similarity(similarity_matrix, nodos_cluster,N):
+    norm = (N**2 - N)/2
     cluster_matrix = similarity_matrix.loc[nodos_cluster,nodos_cluster].values
-    indices = np.triu_indices_from(cluster_matrix,1)
-    values = cluster_matrix[indices]
-    return round(np.mean(values), 2)
+    meansim = np.sum(cluster_matrix)/norm
+    return round(meansim, 2)
 
 #%%
 infomap_meansim = []
 louvain_meansim = []
 
 for i in range(4):
-    infomap_series = infomap_list.apply(lambda x: mean_similarity(similarity_matrix[i], x)).rename(f"mean_sim_lsa_{i}")
-    louvain_series = louvain_list.apply(lambda x: mean_similarity(similarity_matrix[i], x)).rename(f"mean_sim_lsa_{i}")
+    infomap_series = infomap_list.apply(lambda x: mean_similarity(similarity_matrix[i], x,len(x))).rename(f"mean_sim_lsa_{i}")
+    louvain_series = louvain_list.apply(lambda x: mean_similarity(similarity_matrix[i], x,len(x))).rename(f"mean_sim_lsa_{i}")
 
     infomap_meansim.append(infomap_series)
     louvain_meansim.append(louvain_series)
