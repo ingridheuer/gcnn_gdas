@@ -87,17 +87,9 @@ def get_cluster_nodelists(graph_node_data):
 
     return infomap_list, louvain_list
 
-def mean_similarity(similarity_matrix, nodos_cluster):
-    cluster_matrix = similarity_matrix.loc[nodos_cluster,nodos_cluster].values
-    indices = np.triu_indices_from(cluster_matrix,1)
-    values = cluster_matrix[indices]
-    return round(np.mean(values), 2)
+def load_lsa_similiarity_matrix_array(path:str,i):
 
-def load_lsa_similiarity_matrices_sp(path:str):
-    similarity_matrix = []
-
-    for i in range(4):
-        mat_path = f"{path}similarity_matrix_{i}.npz"
-        similarity_matrix.append(sparse.load_npz(mat_path))
+    mat_path = f"{path}similarity_matrix_{i}.npz"
+    similarity_matrix = sparse.load_npz(mat_path).toarray(order="C")
     
     return similarity_matrix
