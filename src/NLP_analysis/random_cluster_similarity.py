@@ -56,9 +56,30 @@ def p_value(iters,size,mean_sim_cluster,similarity_matrix):
     return pvalue
 
 #%%
+iters = 1000
 
-iters = 10
-aver = infomap_data.apply(lambda x: p_value(iters,x["tamaño"].astype(int),x["mean_sim_lsa_0"],similarity_matrix_0),axis=1)
+infomap_pvalues = []
+louvain_pvalues = []
 
+for i in range(4):
+    print(f"Matrix {i}:\n")
+    print("Loading data ...")
+    mat = nlp_utils.load_lsa_similiarity_matrix_array(lsa_data_path,i)
+    meansim_col = f"mean_sim_lsa_{i}"
+
+    print("Infomap random sim ...")
+    infomap_series = infomap_data.set_index("comunidad").apply(lambda x: p_value(iters,x["tamaño"].astype(int), x[meansim_col],mat), axis=1).rename(f"pvalue_{i}")
+
+    print("Louvain random sim...")
+    louvain_series = louvain_data.set_index("comunidad").apply(lambda x: p_value(iters,x["tamaño"].astype(int), x[meansim_col],mat), axis=1).rename(f"pvalue_{i}")
+
+    infomap_pvalues.append(infomap_series)
+    louvain_pvalues.append(louvain_series)
+
+results_infomap = pd.concat(infomap_pvalues,axis=1)
+results_louvain = pd.concat(louvain_pvalues,axis=1)
+print("Done")
 #%%
-
+results_infomap.to_csv(lsa_reports+"infomap_random_pvalues.csv")
+results_louvain.to_csv(lsa_reports+"louvain_random_pvalues.csv")
+#%%
