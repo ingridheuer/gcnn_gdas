@@ -1,6 +1,5 @@
 #%%
 import pandas as pd
-import numpy as np
 #%%
 graph_data = "../../data/processed/graph_data_nohubs/"
 reports_tfidf = "../../reports/reports_nohubs/analisis_tfidf/"
