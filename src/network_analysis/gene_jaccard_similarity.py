@@ -19,9 +19,27 @@ graph_data = data_processed + "graph_data_nohubs/"
 reports_genes = "../../reports/reports_nohubs/analisis_red_genes/"
 
 graph_node_data = pd.read_csv(graph_data+"nohub_graph_node_data.csv")
+graph_edge_data = pd.read_csv(graph_data+"nohub_graph_edge_data.csv")
 # graph_edge_data = pd.read_csv(graph_data+"nohub_graph_edge_data.csv")
 
 G = nx.read_gml(graph_data+"nohub_gda_network.gml", destringizer=int)
+#%%
+def attributes_from_pd(G:nx.Graph,df:pd.DataFrame,attributes:dict,indexcol):
+    """Dados un grafo G y un dataframe df con atributos de sus nodos, especificamos los atributos
+    que queremos agregar a los nodos en un diccionario con formato {nombre_columna:nombre_atributo}. 
+    La función arma un diccionario con los atributos y el nombre que le queremos poner, indexado con el identificador de nodo que elegimos 
+    y los asigna a los nodos del grafo"""
+    for attribute,name in attributes.items():
+        nx.set_node_attributes(G,pd.Series(df.set_index(indexcol)[attribute]).to_dict(),name)
+
+edges_proteinas = graph_edge_data[(graph_edge_data.edge_type == "ppi")]
+nodos_proteinas = graph_node_data[(graph_node_data.node_type == "gene_protein")]
+PPI = nx.from_pandas_edgelist(edges_proteinas,source="x_index",target="y_index")
+PPI_attributes = {"node_type":"node_type","node_name":"node_name","node_id":"node_id","node_source":"node_source"}
+attributes_from_pd(PPI,graph_node_data,PPI_attributes,"node_index")
+
+nodos_proteinas_set = set(PPI.nodes())
+
 #%%
 # nodos_gda = pd.DataFrame(dict(G.nodes(data=True))).T.reset_index().rename(columns={"index":"node_index"})
 # nodos_enfermedad = nodos_gda.loc[nodos_gda.node_type == "disease", "node_index"].sort_values().values
@@ -29,9 +47,10 @@ nodos_enfermedad = graph_node_data[(graph_node_data.degree_gda != 0) & (graph_no
 
 np.savetxt(reports_genes+"index_matrices_jaccard.txt",nodos_enfermedad)
 #%%
-def get_2_order_sets(node_list,G):
+def get_2_order_sets(node_list,G,P):
     first_order = util.get_node_neighbor_sets(node_list,G)
-    second_order = {n:util.neighbors_from_list(first_order[n],G) for n in node_list}
+    remain = {n:set(s)&nodos_proteinas_set for n,s in first_order.items()}
+    second_order = {n:util.neighbors_from_list(remain[n],P) for n in node_list}
     set_union = {n:first.union(second_order[n]) for n,first in first_order.items()}
     
     return first_order, second_order, set_union
@@ -65,7 +84,7 @@ def get_coef_matrix(metric,nodos_enfermedad,conjuntos_enfermedad,return_sparse=F
     return matrix
 
 #%%
-first_order,second_order, both_orders = get_2_order_sets(nodos_enfermedad,G)
+first_order,second_order, both_orders = get_2_order_sets(nodos_enfermedad,G,PPI)
 jaccard_matrix_1 = get_coef_matrix(jaccard,nodos_enfermedad,first_order,True)
 overlap_matrix_1 = get_coef_matrix(overlap,nodos_enfermedad,first_order,True)
 

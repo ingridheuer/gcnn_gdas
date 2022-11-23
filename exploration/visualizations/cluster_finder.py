@@ -38,4 +38,6 @@ def find_cluster(partition, keyword:str):
 
     return result
 #%%
-find_cluster("infomap","thrombocytopenia")
+find_cluster("infomap","finger")
+#%%
+find_cluster("louvain","finger")
