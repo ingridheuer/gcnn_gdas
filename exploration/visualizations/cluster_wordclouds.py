@@ -61,7 +61,7 @@ def plot_term_distribution(partition,cluster):
     fig.show()
 
 #%%
-plot_wordcloud("louvain",3,70,None,"white")
+plot_wordcloud("infomap",1021,70,None,"white")
 #%%
-plot_wordcloud("louvain",31,70,None,"white")
+plot_wordcloud("louvain",11,70,None,"white")
 #%%

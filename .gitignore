@@ -239,3 +239,4 @@ reports_backup/*
 reports/*
 src/NLP_analysis/ipython-input-12-profile
 src/NLP_analysis/profile.json
+exploration/notebooks/network_analysis/experimento_solo_gda.ipynb
