@@ -11,7 +11,7 @@ def load_dtm_matrices(path,name,N):
     score_matrix = pd.read_csv(score_path, index_col=0)
     return term_matrix, score_matrix
 
-def plot_wordcloud(partition,cluster,cmap,background_color="white"):
+def plot_wordcloud(partition,cluster,cmap="viridis",background_color="white"):
     if partition == "infomap":
         terms,scores = load_dtm_matrices("../../reports/summary/","infomap",100)
     elif partition == "louvain":
