@@ -33,8 +33,4 @@ def find_cluster(partition, keyword:str):
         result.drop(result[result.score==0].index, inplace=True)
 
     return result
-#%%
-find_cluster("infomap","schwann")
-#%%
-find_cluster("louvain","cutis laxa")
-#%%
+
