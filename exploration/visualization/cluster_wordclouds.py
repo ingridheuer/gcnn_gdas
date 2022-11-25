@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 # import plotly.express as px
 from wordcloud import WordCloud
-#%%
+
 def load_dtm_matrices(path,name,N):
     term_path = f"{path}top_{N}_terms_{name}.csv"
     score_path = f"{path}top_{N}_score_{name}.csv"
@@ -42,9 +42,3 @@ def plot_wordcloud(partition,cluster,cmap,background_color="white"):
 
 #     fig = px.bar(frequencies,width=800, height=400, title="TF-IDF monogram distribution").update_layout(yaxis_title="Monograms",xaxis_title="TF-IDF value")
 #     fig.show()
-
-#%%
-plot_wordcloud("infomap",525,None,"white")
-#%%
-plot_wordcloud("louvain",31,None,"white")
-#%%
