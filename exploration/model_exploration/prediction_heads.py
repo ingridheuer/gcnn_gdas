@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 class distmult_head(torch.nn.Module):
   def __init__(self, hetero_graph, hidden_size):
