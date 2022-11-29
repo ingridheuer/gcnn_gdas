@@ -12,6 +12,8 @@ def attributes_from_pd(G:nx.Graph,df:pd.DataFrame,attributes:dict,indexcol):
     y los asigna a los nodos del grafo"""
     for attribute,name in attributes.items():
         nx.set_node_attributes(G,pd.Series(df.set_index(indexcol)[attribute]).to_dict(),name)
+        nx.set_node_attributes(G,{n:n for n in list(G.nodes())},"node_dataset_index")
+
 #%%
 G = nx.from_pandas_edgelist(graph_edge_data,source="x_index",target="y_index", edge_attr="edge_type")
 
