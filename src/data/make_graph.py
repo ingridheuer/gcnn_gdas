@@ -15,7 +15,7 @@ def attributes_from_pd(G:nx.Graph,df:pd.DataFrame,attributes:dict,indexcol):
 #%%
 G = nx.from_pandas_edgelist(graph_edge_data,source="x_index",target="y_index", edge_attr="edge_type")
 
-G_attributes = {"node_name":"node_name","node_type":"node_type","node_id":"node_id","node_source":"node_source","comunidades_infomap":"infomap_id","comunidades_louvain":"louvain_id"}
+G_attributes = {"node_name":"node_name","node_type":"node_type","node_id":"node_id"}
 
 attributes_from_pd(G,graph_node_data,G_attributes,"node_index")
 #%%
