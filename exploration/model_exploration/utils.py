@@ -4,16 +4,19 @@ from deepsnap.hetero_graph import HeteroGraph
 import networkx as nx
 from torch_sparse import SparseTensor
 from collections import Counter
+import pandas as pd
 
 def get_prediction(model,H:HeteroGraph) -> dict:
     prediction = {}
+    scores = {}
     with torch.no_grad():
         preds = model(H)
         for key,pred in preds.items():
             logits = torch.sigmoid(pred)
             pred_label = torch.round(logits)
             prediction[key] = pred_label
-    return prediction
+            scores[key] = torch.round(logits,decimals=3)
+    return prediction,scores
 
 def get_edge_data(H:HeteroGraph, type:tuple) -> dict:
     """(n1,n2): {attr dict}"""
@@ -121,3 +124,45 @@ def init_multiple_features(G,modes_sizes:dict) -> dict:
 def set_feature(split,init_mode,feature_length):
   feature_key = f"{init_mode}_{feature_length}"
   split.__setattr__("node_feature",split[feature_key])
+
+
+def map_prediction_to_edges(prediction:dict,H:HeteroGraph, edge_to_label = True) -> dict:
+  """Dada una predicción, devuelve un diccionario que mapea el edge (u,v) a la etiqueta predecida.
+  El mapa corresponde a los enlaces en el dataset usado: si se predijo sobre val, pasar dataset val al argument
+  esto es importante porque los indices no se conservan en los splits
+  if edge_to_label el dict es {(u,v):label}, sino es {label:[(u,v),...]}"""
+
+  prediction_map = {}
+  for edge_type,pred in prediction.items():
+    predicted_labels = pred.tolist()
+    labeled_edges = tensor_to_edgelist(H.edge_label_index[edge_type])
+    pred_map = {edge:label for edge,label in zip(labeled_edges,predicted_labels)}
+    if edge_to_label:
+      prediction_map[edge_type] = pred_map
+    else:
+      positives = [edge for edge,val in pred_map.items() if val==1]
+      negatives = [edge for edge,val in pred_map.items() if val==0]
+      prediction_map[edge_type] = {1:positives, 0:negatives}
+  return prediction_map
+
+def get_prediction_dataframe(scores,H)-> dict:
+  """Dado un tensor de predicción, devuelve un dataframe con un enlace por fila y su info.
+  El tensor de input es una predicción en formato torch.tensor([1,0,1...]). Los índices de ese tensor corresponden a los indices del enlace.
+  Esos índices dependen del grafo del cual salieron, por eso hay que también pasar el dataset como argumento
+  Esta función traduce los indices a enlaces y busca sus datos, devuelve todo en un dataframe"""
+
+  results = {}
+  edge_to_label_dict = map_prediction_to_edges(scores,H)
+  for edgetype,pred in edge_to_label_dict.items():
+    src_type, relation, trg_type = edgetype
+    src_info = get_node_data(H,src_type)
+    trg_info = get_node_data(H,trg_type)
+    for edge, label in pred.items():
+      src,trg = edge
+      results[edge] = {"type":relation,"source_index":src_info[src]["data"]["node_dataset_index"],"target_index":trg_info[trg]["data"]["node_dataset_index"],"source_type":src_info[src]["data"]["node_type"],"target_type":trg_info[trg]["data"]["node_type"],"source_name":src_info[src]["data"]["node_name"], "target_name":trg_info[trg]["data"]["node_name"] ,"score":label}
+  
+  frame = pd.DataFrame.from_dict(results, orient="index")
+  frame["label"] = frame["score"].round()
+  frame = frame.sort_values(by="score",ascending=False)
+
+  return frame

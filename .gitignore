@@ -240,3 +240,10 @@ reports/*
 src/NLP_analysis/ipython-input-12-profile
 src/NLP_analysis/profile.json
 exploration/notebooks/network_analysis/experimento_solo_gda.ipynb
+exploration/model_exploration/figures/rsage_random_5_all.png
+exploration/model_exploration/figures/rsage_random_5_gda_only.png
+exploration/model_exploration/figures/rsage_random_10_all.png
+exploration/model_exploration/figures/rsage_random_10_gda_only.png
+exploration/model_exploration/figures/rsage_random_50_all.png
+exploration/model_exploration/figures/rsage_random_50_gda_only.png
+exploration/model_exploration/figures/rsage_random_5_gda_only.png
