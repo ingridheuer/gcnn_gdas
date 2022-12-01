@@ -156,19 +156,15 @@ G = graph_data.to_directed()
 #placeholder feature:
 nx.set_node_attributes(G,[],"node_feature")
 #inicializo features
-utils.init_multiple_features(G,{"random":[5,10,50,100,500]})
+utils.init_multiple_features(G,{"random":[5]})
 
 utils.check_symmetry_test(G)
 Hete = HeteroGraph(G)
 
+utils.set_feature(Hete,"random",5)
+
 task = 'link_pred'
-train_mode = "disjoint"
 
-dataset = GraphDataset([Hete], task=task, edge_train_mode=train_mode, resample_negatives=True)
-dataset_train, dataset_val, dataset_test = dataset.split(transductive=True, split_ratio=[0.4, 0.3, 0.3])
-train_data, val_data, test_data = dataset_train[0], dataset_val[0], dataset_test[0]
-
-#%%
 args = {
     'device': torch.device('cuda' if torch.cuda.is_available() else 'cpu'),
     'hidden_size': 32,
@@ -177,18 +173,8 @@ args = {
     'epochs':50,
     'k_hits':[50,200]
 }
-#%%
-all_results = {}
-models = {}
-supervision = ["all","gda_only"]
-feature_len = [5,10,50]
-train_mode = "disjoint"
 
-for sup in supervision:
-  for flen in feature_len:
-    print(sup,flen)
-    result,model = optimization_iteration(Hete,train_data,val_data,train_mode,sup,"dotprod",flen,"random",args,"figures/")
-    all_results[(sup,flen)] = result
-    models[(sup,flen)] = model
-# %%
-all_results
+model = convolutions.HeteroGNN(Hete,"dotprod","gda_only",args)
+#%%
+model(Hete)
+#%%
