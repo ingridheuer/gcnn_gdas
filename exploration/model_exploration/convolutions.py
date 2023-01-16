@@ -8,7 +8,7 @@ import deepsnap.hetero_gnn
 from prediction_heads import distmult_head
 from utils import edgeindex_to_sparsematrix
 
-quiet = True
+quiet = False
 
 def talk(msg, quiet=quiet):
     if not quiet:
@@ -230,10 +230,11 @@ class HeteroGNN(torch.nn.Module):
         elif self.head == "distmult":
           return self.distmult_head.score(x,edge_label_index)
           
-    def loss(self, pred, y):
+    def loss(self, prediction_dict, ground_truth_dict):
         loss = 0
+        num_types = len(prediction_dict.keys())
         # sets = torch.tensor(len(pred.keys()))
-        for key in pred:
-            p = pred[key]
-            loss += self.loss_fn(p, y[key].type(pred[key].dtype))
-        return loss
+        for edge_type,pred in prediction_dict.items():
+            y = ground_truth_dict[edge_type]
+            loss += self.loss_fn(pred, y.type(pred.dtype))
+        return loss/num_types

@@ -177,4 +177,3 @@ args = {
 model = convolutions.HeteroGNN(Hete,"dotprod","gda_only",args)
 #%%
 model(Hete)
-#%%

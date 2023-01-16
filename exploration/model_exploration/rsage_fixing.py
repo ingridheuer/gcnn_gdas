@@ -20,8 +20,8 @@ def train(model, optimizer, graph, printb):
     acc = 0
     num = 0
     for key,pred in preds.items():
-      logits = torch.sigmoid(pred)
-      pred_label = torch.round(logits)
+      probabilities = torch.sigmoid(pred)
+      pred_label = torch.round(probabilities)
       acc += (pred_label == graph.edge_label[key]).sum().item()
       num += pred_label.shape[0]
     accuracy = acc/num
@@ -37,8 +37,8 @@ def test(model,validation_set,global_accuracy=True):
     with torch.no_grad():
       preds = model(validation_set)
       for key,pred in preds.items():
-        logits = torch.sigmoid(pred)
-        pred_label = torch.round(logits)
+        probabilities = torch.sigmoid(pred)
+        pred_label = torch.round(probabilities)
         acc += (pred_label == validation_set.edge_label[key]).sum().item()
         num += pred_label.shape[0]
     accuracy = round(acc/num,3)
@@ -48,8 +48,8 @@ def test(model,validation_set,global_accuracy=True):
     with torch.no_grad():
       preds = model(validation_set)
       for key,pred in preds.items():
-        logits = torch.sigmoid(pred)
-        pred_label = torch.round(logits)
+        probabilities = torch.sigmoid(pred)
+        pred_label = torch.round(probabilities)
         acc = (pred_label == validation_set.edge_label[key]).sum().item()
         num = pred_label.shape[0]
         type_accuracy[key] = round(acc/num,3)
@@ -60,20 +60,22 @@ def hits_at_k(model,dataset,k,args) -> dict:
   with torch.no_grad():
     preds = model(dataset)
     for key,pred in preds.items():
+        pred = torch.sigmoid(pred)
         #ordeno los puntajes de mayor a menor
         pred, indices = torch.sort(pred, descending=True)
 
-        #corto el ranking en 0.5
-        pred = pred[pred>0.5]
-
         #me quedo solo con los k mayor punteados
-        if pred.shape[0]>k:
+        pred = pred[:k]
+        indices = indices[:k]
+
+        if all(pred > 0.5):
           pred, indices = pred[:k].to(args["device"]), indices[:k].to(args["device"])
         else:
-          print(f"Top {k} scores below classification threshold 0.5, returning top {pred.shape[0]}")
+          threshold_index = (pred < 0.5).nonzero()[0].item()
+          print(f"Top {k} scores below classification threshold 0.5, threshold index: {threshold_index}")
 
         #busco que label tenían esas k preds
-        labels = torch.index_select(dataset.edge_label[key],-1,indices)
+        labels = dataset.edge_label[key][indices]
 
         #cuento cuantas veces predije uno positivo en el top k
         hits[key] = labels.sum().item()
@@ -181,7 +183,7 @@ args = {
 all_results = {}
 models = {}
 supervision = ["all","gda_only"]
-feature_len = [5,10,50]
+feature_len = [5,10]
 train_mode = "disjoint"
 
 for sup in supervision:
