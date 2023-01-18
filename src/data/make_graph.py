@@ -2,7 +2,7 @@
 import networkx as nx
 import pandas as pd
 #%%
-graph_node_data = pd.read_csv("../../data/processed/graph_data_nohubs/nohub_graph_node_data.csv")
+graph_node_data = pd.read_csv("../../data/processed/graph_data_nohubs/nohub_graph_nodes.csv")
 graph_edge_data = pd.read_csv("../../data/processed/graph_data_nohubs/nohub_graph_edge_data.csv")
 #%%
 def attributes_from_pd(G:nx.Graph,df:pd.DataFrame,attributes:dict,indexcol):

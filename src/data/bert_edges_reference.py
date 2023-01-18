@@ -5,8 +5,8 @@ data_processed = "../../data/processed/"
 data_interim = "../../data/interim/"
 data_external = "../../data/external/"
 
-disease_mappings = pd.read_csv(data_processed+"graph_data/disease_mappings.csv")
-graph_node_data = pd.read_csv(data_processed+"graph_data/grafo_alternativo_CG_nodos.csv")
+disease_mappings = pd.read_csv(data_processed+"graph_data_nohubs/disease_mappings.csv")
+graph_node_data = pd.read_csv(data_processed+"graph_data_nohubs/nohub_graph_nodes.csv")
 
 bert_mask = disease_mappings.group_id_bert.isna()
 mapa_nodos_bert = disease_mappings[~bert_mask]
@@ -30,4 +30,6 @@ bert_temp = pd.merge(bert_edge_data, graph_node_data[["node_index","node_id"]], 
 
 bert_final = pd.merge(bert_temp, graph_node_data[["node_index","node_id"]], left_on="y_id", right_on="node_id",how="left").rename(columns={"node_index":"y_index"}).drop(columns=["node_id"]).dropna().astype({"y_index":"int"})
 
-bert_final.to_csv(data_processed+"graph_data/bert_edge_reference.csv")
+bert_final.to_csv(data_processed+"graph_data_nohubs/bert_edge_reference.csv")
+#%%
+
