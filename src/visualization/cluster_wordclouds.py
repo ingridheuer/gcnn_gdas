@@ -42,3 +42,24 @@ def plot_wordcloud(partition,cluster,cmap="viridis",background_color="white"):
 
 #     fig = px.bar(frequencies,width=800, height=400, title="TF-IDF monogram distribution").update_layout(yaxis_title="Monograms",xaxis_title="TF-IDF value")
 #     fig.show()
+
+def save_wordcloud(partition,cluster,path,cmap="viridis",background_color="white"):
+    if partition == "infomap":
+        terms,scores = load_dtm_matrices("../../reports/summary/","infomap",100)
+    elif partition == "louvain":
+        terms,scores = load_dtm_matrices("../../reports/summary/","louvain",100)
+    else:
+        print("Not a valid partition")
+
+    cluster_terms = terms.loc[cluster]
+    cluster_scores = scores.loc[cluster]
+    frequencies = dict(zip(cluster_terms,cluster_scores))
+    wordcloud = WordCloud(colormap=cmap,background_color=background_color).generate_from_frequencies(frequencies=frequencies)
+    plt.figure()
+    plt.imshow(wordcloud, interpolation="bilinear")
+    # fig = plt.gcf()
+    # fig.set_size_inches(10,10)
+    plt.savefig(path,dpi=700, format="svg")
+    plt.axis("off") 
+    plt.show()
+    
