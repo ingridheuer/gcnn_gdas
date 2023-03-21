@@ -1,1 +1,4 @@
-**/*.ipynb linguist-vendored
+src/*.ipynb linguist-vendored
+data/*.ipynb linguist-vendored
+models/*.ipynb linguist-vendored
+exploration/*.ipynb linguist-vendored
