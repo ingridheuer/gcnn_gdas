@@ -62,3 +62,11 @@ def get_reverse_types(edge_types):
     reversed_newlist = [tuple(reversed(edge)) for edge in newlist]
 
     return newlist, reversed_newlist
+
+def initialize_features(data_object,feature,dim):
+    for nodetype, store in data_object.node_items():
+        if feature == "random":
+            data_object[nodetype].x = torch.rand(store["num_nodes"],dim)
+        if feature == "ones":
+            data_object[nodetype].x = torch.ones(store["num_nodes"],dim)
+    return data_object
