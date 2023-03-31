@@ -316,7 +316,7 @@ def test(model,validation_set,global_accuracy=True):
     return type_accuracy
 
 #%%
-from sklearn.metrics import roc_auc_score, average_precision_score, roc_curve
+from sklearn.metrics import roc_auc_score, average_precision_score, top_k_accuracy_score, accuracy_score
 #%%
 result = model(train_data)
 prob = result[("gene_protein","gda","disease")]
