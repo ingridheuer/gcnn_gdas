@@ -75,7 +75,7 @@ def draw_graph(g,ax,node_color_rule,edge_color_rule,edge_line_rule,layout):
     edge_colors = generate_style_list(g,edge_color_rule[0],edge_color_rule[1],False)
     edge_lines = generate_style_list(g,edge_line_rule[0],edge_line_rule[1],False)
 
-    nx.draw(g,ax=ax,pos=layout,node_color=node_colors,edge_color=edge_colors,style=edge_lines,node_size=100,connectionstyle="arc3,rad=0.1",with_labels=True)
+    nx.draw(g,ax=ax,pos=layout,node_color=node_colors,edge_color=edge_colors,style=edge_lines,node_size=100,connectionstyle="arc3,rad=0.1")
 
 def draw_splits(G,split_list,node_map,node_color_rule,edge_color_rule,edge_line_rule):
     fig,ax = plt.subplots(3,1,figsize=(10,30),squeeze=True, dpi=300)
