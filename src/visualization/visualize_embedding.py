@@ -1,6 +1,7 @@
 #%%
 import copy
 import torch
+import itertools
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -136,6 +137,30 @@ def plot_pca_with_communities(gene_encodings,disease_encodings,title,n_component
     
     fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=partition, title=title,hover_name="node_names")
     fig.show()
+
+def plot_pca_all_types(encodings_dict,title,n_components,plot_components):
+
+    encodings = [tensor.detach().cpu().numpy() for tensor in encodings_dict.values()]
+    z = np.concatenate(encodings)
+
+    pca = PCA(n_components=n_components)
+    components = pca.fit_transform(z)
+    component_df = pd.DataFrame(components)
+
+    sub_dfs = []
+    for node_type in encodings_dict.keys():
+        sub_df = node_data[node_data.node_type == node_type]
+        node_map_series = pd.Series(node_map[node_type],name="tensor_index")
+        sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index(drop=True)
+
+        sub_dfs.append(sub_df)
+
+    df = pd.concat(sub_dfs,ignore_index=True)
+    df = df.merge(component_df,left_index=True,right_index=True)
+
+    fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color="node_type", title=title,hover_name="node_name")
+
+    fig.show()
 #%%
 results = pd.read_parquet(experiments_folder+"experiment_18_04_23.parquet").sort_values(by="auc",ascending=False)
 
@@ -144,7 +169,7 @@ node_data,node_map = load_node_csv(data_folder+"nohub_graph_nodes.csv","node_ind
 node_names = node_data[(node_data.node_type == "disease") | (node_data.node_type == "gene_protein")].sort_values(by="node_type").node_name.values
 node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
 #%%
-eid = 41
+eid = 10
 date = "18_04_23"
 model,params = load_experiment(eid,date,train_data.metadata())
 train_data = initialize_features(train_data,params["feature_type"],params["feature_dim"])
@@ -160,3 +185,6 @@ plot_pca(gene_encodings,disease_encodings,"Encodings de genes y enfermedades (ou
 plot_pca_3D(gene_encodings,disease_encodings,"aver",3,(0,1,2))
 #%%
 plot_pca_with_communities(gene_encodings,disease_encodings,"aver",2,(0,1),node_info)
+#%%
+plot_pca_all_types(model.encode(train_data),"aver",2,(0,1))
+#%%
