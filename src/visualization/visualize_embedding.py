@@ -184,7 +184,7 @@ plot_pca(gene_encodings,disease_encodings,"Encodings de genes y enfermedades (ou
 #%%
 plot_pca_3D(gene_encodings,disease_encodings,"aver",3,(0,1,2))
 #%%
-plot_pca_with_communities(gene_encodings,disease_encodings,"aver",2,(0,1),node_info)
+plot_pca_with_communities(gene_encodings,disease_encodings,"aver",3,(1,2),node_info)
 #%%
-plot_pca_all_types(model.encode(train_data),"aver",2,(0,1))
+plot_pca_all_types(model.encode(train_data),"aver",3,(1,2))
 #%%
