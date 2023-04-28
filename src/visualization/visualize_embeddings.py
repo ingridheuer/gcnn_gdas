@@ -6,6 +6,8 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from sklearn.decomposition import PCA
+from sklearn.manifold import TSNE
+from umap import UMAP
 
 import sys
 sys.path.append("..")
@@ -76,13 +78,9 @@ def load_node_csv(path, index_col,type_col, **kwargs):
 
 @torch.no_grad()
 def get_encodings(model,data):
-    
     model.eval()
     encodings = model.encode(data)
-    gene_encodings = encodings["gene_protein"]
-    disease_encodings = encodings["disease"]
-
-    return gene_encodings, disease_encodings
+    return encodings
 
 def plot_pca(gene_encodings,disease_encodings,title,n_components,plot_components):
 
@@ -104,7 +102,10 @@ def plot_pca_3D(gene_encodings,disease_encodings,title,n_components,plot_compone
 
     z1 = disease_encodings.detach().cpu().numpy()
     z2 = gene_encodings.detach().cpu().numpy()
+    gene_encodings = encodings["gene_protein"]
+    disease_encodings = encodings["disease"]
 
+    return gene_encodings, disease_encodings
     z = np.concatenate([z1,z2])
 
     num_diseases = z1.shape[0]
@@ -161,6 +162,53 @@ def plot_pca_all_types(encodings_dict,title,n_components,plot_components):
     fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color="node_type", title=title,hover_name="node_name")
 
     fig.show()
+
+def plot_umap(encodings_dict,n_components,plot_components,title,colors):
+    node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
+    encodings = [tensor.detach().cpu().numpy() for tensor in encodings_dict.values()]
+    z = np.concatenate(encodings)
+    umap = UMAP(n_components=n_components, init='random', random_state=0) 
+    proj = umap.fit_transform(z)
+    proj_df = pd.DataFrame(proj)
+
+    sub_dfs = []
+    for node_type in encodings_dict.keys():
+        sub_df = node_info[node_info.node_type == node_type]
+        node_map_series = pd.Series(node_map[node_type],name="tensor_index")
+        sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index(drop=True)
+
+        sub_dfs.append(sub_df)
+
+    df = pd.concat(sub_dfs,ignore_index=True)
+    df = df.merge(proj_df,left_index=True,right_index=True).fillna(-1).astype({"comunidades_infomap":str,"comunidades_louvain":str})
+
+    fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=colors, title=title,hover_name="node_name")
+
+    fig.show()
+
+def plot_tsne(encodings_dict,n_components,plot_components,title,colors):
+    node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
+    encodings = [tensor.detach().cpu().numpy() for tensor in encodings_dict.values()]
+    z = np.concatenate(encodings)
+    tsne = TSNE(n_components=n_components, random_state=0)
+    proj = tsne.fit_transform(z)
+    proj_df = pd.DataFrame(proj)
+
+    sub_dfs = []
+    for node_type in encodings_dict.keys():
+        sub_df = node_info[node_info.node_type == node_type]
+        node_map_series = pd.Series(node_map[node_type],name="tensor_index")
+        sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index(drop=True)
+
+        sub_dfs.append(sub_df)
+
+    df = pd.concat(sub_dfs,ignore_index=True)
+    df = df.merge(proj_df,left_index=True,right_index=True).fillna(-1).astype({"comunidades_infomap":str,"comunidades_louvain":str})
+
+    fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=colors, title=title,hover_name="node_name")
+
+    fig.show()
+
 #%%
 results = pd.read_parquet(experiments_folder+"experiment_18_04_23.parquet").sort_values(by="auc",ascending=False)
 
@@ -169,22 +217,11 @@ node_data,node_map = load_node_csv(data_folder+"nohub_graph_nodes.csv","node_ind
 node_names = node_data[(node_data.node_type == "disease") | (node_data.node_type == "gene_protein")].sort_values(by="node_type").node_name.values
 node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
 #%%
-eid = 10
+eid = 34
 date = "18_04_23"
 model,params = load_experiment(eid,date,train_data.metadata())
 train_data = initialize_features(train_data,params["feature_type"],params["feature_dim"])
 val_data = initialize_features(train_data,params["feature_type"],params["feature_dim"])
-disease_x = train_data["disease"].x
-gene_x = train_data["gene_protein"].x
-gene_encodings,disease_encodings = get_encodings(model,train_data)
-#%%
-plot_pca(gene_x,disease_x,"Vector de features de genes y enfermedades (input al modelo)",2,(0,1))
-#%%
-plot_pca(gene_encodings,disease_encodings,"Encodings de genes y enfermedades (output del modelo sin decoder)",2,(0,1))
-#%%
-plot_pca_3D(gene_encodings,disease_encodings,"aver",3,(0,1,2))
-#%%
-plot_pca_with_communities(gene_encodings,disease_encodings,"aver",3,(1,2),node_info)
-#%%
-plot_pca_all_types(model.encode(train_data),"aver",3,(1,2))
+
+encodings_dict = get_encodings(model,train_data)
 #%%
