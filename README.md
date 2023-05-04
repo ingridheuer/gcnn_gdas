@@ -1,8 +1,8 @@
-Redes convolucionales definidas en grafos para la predicción de nuevas asociaciones gen-enfermedad
+# Redes convolucionales definidas en grafos para la predicción de nuevas asociaciones gen-enfermedad
 
 
 
-==============================![Screenshot from 2023-05-03 18-02-34](https://user-images.githubusercontent.com/61297025/236049083-3c1dc069-9223-49ec-95db-14f2b8810d77.png)
+![Screenshot from 2023-05-03 18-02-34](https://user-images.githubusercontent.com/61297025/236049083-3c1dc069-9223-49ec-95db-14f2b8810d77.png)
 
 
 Project Organization
