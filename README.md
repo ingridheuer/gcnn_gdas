@@ -1,6 +1,6 @@
 # Redes convolucionales definidas en grafos para la predicción de nuevas asociaciones gen-enfermedad
 
-
+Las secciones de integración de datos, análisis de red y de lenguaje natural se presentaron en el congreso [NetSci-x 2023](https://cnet.fi.uba.ar/netscix23/).
 ![poster_netsci](https://user-images.githubusercontent.com/61297025/236244985-1911d0fb-7dee-4094-b0f5-44747ba50e21.jpg)
 
 
