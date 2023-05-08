@@ -119,3 +119,4 @@ print(f'Generated explanations in {explanation.available_explanations}')
 path = 'feature_importance.png'
 explanation.visualize_feature_importance(path, top_k=10)
 print(f"Feature importance plot has been saved to '{path}'")
+# %%
