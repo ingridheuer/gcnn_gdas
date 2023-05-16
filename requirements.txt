@@ -31,6 +31,7 @@ torch_scatter==2.1.1
 torch_sparse==0.6.17+pt20cpu
 umap_learn==0.5.3
 wordcloud==1.8.2.2
+torchviz==0.0.2
 pyarrow
 fastparquet
 captum
