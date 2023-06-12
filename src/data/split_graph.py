@@ -4,9 +4,19 @@ from torch_geometric.data import HeteroData
 import torch_geometric.transforms as T
 import pandas as pd
 import random
+import os
 
 random.seed(0)
 torch.manual_seed(0)
+#%%
+data_folder = "../../data/processed/graph_data_nohubs/merged_types/"
+node_csv_path = data_folder+"merged_nodes.csv"
+edge_csv_path = data_folder+"merged_edges.csv"
+save_to_path = data_folder+"split_dataset/"
+
+if not os.path.exists(save_to_path):
+    print("save_to_path dir does not exist, a new directory will be created")
+    os.makedirs(save_to_path)
 #%%
 def load_node_csv(path, index_col,type_col, **kwargs):
     """Returns node dataframe and a dict of mappings for each node type. 
@@ -21,7 +31,9 @@ def load_node_csv(path, index_col,type_col, **kwargs):
     return df,mappings_dict
 
 def load_edge_csv(path, src_index_col, dst_index_col, mappings, edge_type_col,src_type_col,dst_type_col, **kwargs):
-    """Returns edge dataframe and a dict of edge indexes. Nodes are indexed according to the "heterodata index", using the node mappings from load_node_csv. Edge indexes are tensors of shape [2, num_edges]. Dict is indexed by triplets of shape (src_type, edge_type, dst_type)."""
+    """Returns edge dataframe and a dict of edge indexes. Nodes are indexed according to the "heterodata index", 
+    using the node mappings from load_node_csv. Edge indexes are tensors of shape [2, num_edges]. 
+    Dict is indexed by triplets of shape (src_type, edge_type, dst_type)."""
     df = pd.read_csv(path, **kwargs)
     df["edge_triple"] = list(zip(df[src_type_col],df[edge_type_col], df[dst_type_col]))
     edge_triplets = df["edge_triple"].unique()
@@ -69,9 +81,9 @@ def get_reverse_types(edge_types):
 
     return newlist, reversed_newlist
 #%%
-data_folder = "../../data/processed/graph_data_nohubs/"
-node_data, node_map = load_node_csv(data_folder+"nohub_graph_nodes.csv","node_index","node_type")
-edge_data, edge_index = load_edge_csv(data_folder+"nohub_graph_edge_data.csv","x_index","y_index",node_map,"edge_type","x_type","y_type")
+
+node_data, node_map = load_node_csv(node_csv_path,"node_index","node_type")
+edge_data, edge_index = load_edge_csv(edge_csv_path,"x_index","y_index",node_map,"edge_type","x_type","y_type")
 
 data = create_heterodata(node_map,edge_index)
 #%%
@@ -121,10 +133,11 @@ for name,dataset,p in zip(names,datasets,percentage):
 
 #%%
 # Save splits to cpu
-split_folder = data_folder+"split_dataset/"
-torch.save(data,split_folder+"full_dataset"+".pt")
+confirm = input(f"Saving splits from {node_csv_path} \n to {save_to_path}. \nContinue? (y/n)")
 
-for dataset,name in zip(datasets,names):
-    path = split_folder+name+".pt"
-    torch.save(dataset,path)
-#%%
+if confirm == "y":
+    torch.save(data,save_to_path+"full_dataset"+".pt")
+
+    for dataset,name in zip(datasets,names):
+        path = save_to_path+name+".pt"
+        torch.save(dataset,path)
