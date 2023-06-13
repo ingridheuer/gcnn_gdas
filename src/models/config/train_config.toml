@@ -1,0 +1,28 @@
+# model training settings
+
+[train_params]
+weight_decay = 0.001
+lr = 0.001
+epochs = 400
+patience = 5
+delta = 0.01
+metric = "roc_auc"
+
+[data]
+dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/"
+results_folder_path = "../../data/experiments/merged_types_experiment/"
+
+[features]
+feature_type = "ones"
+feature_dim = 10
+
+[model]
+model = "sage_ones"
+supervision_types = ["gda"]
+
+[misc]
+seed = 0
+save_plot_data = true
+save_trained_model = true
+plot_title = "Merged types experiment"
+model_name = "sage_ones_merged_experiment"
