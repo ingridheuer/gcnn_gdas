@@ -208,3 +208,19 @@ def save_model(model,folder_path,model_name):
     fdate = date.strftime("%d_%m_%y__")
     fname = f"{model_name}_{fdate}"
     torch.save(model.state_dict(), f"{folder_path}{fname}.pth")
+
+def load_model(weights_path,model_type,supervision_types,metadata,model_args=None):
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    weights = torch.load(weights_path,map_location=torch.device(device))
+
+    if model_type == "base_model":
+        import base_model
+        model = base_model(model_args,metadata,supervision_types)
+    elif model_type == "sage_ones":
+        import sage_ones
+        model = sage_ones.Model(metadata,supervision_types)
+    
+    model.load_state_dict(weights)
+    
+    return model
