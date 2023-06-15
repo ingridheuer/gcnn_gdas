@@ -1,227 +1,190 @@
 #%%
-import copy
-import torch
-import itertools
 import pandas as pd
 import numpy as np
 import plotly.express as px
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from sklearn.manifold import TSNE
-from umap import UMAP
+# from umap import UMAP
 
 import sys
 sys.path.append("..")
-from models.base_model import base_model
+from models import training_utils
+
+from config import viz_config
 #%%
-data_folder = "../../data/processed/graph_data_nohubs/"
-models_folder = "../../data/models/"
-experiments_folder = "../../data/experiments/design_space_experiment/"
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# Load data
+data_args = viz_config["data"]
+train_data, val_data = training_utils.load_data(data_args["dataset_folder_path"])
+node_csv,node_map = training_utils.load_node_csv(data_args["node_data_path"],"node_index","node_type")
+node_info = pd.read_csv(data_args["node_info_path"])
+node_names = node_csv[(node_csv.node_type == "disease") | (node_csv.node_type == "gene_protein")].sort_values(by="node_type").node_name.values
+
+model_args = viz_config["model"]
+model = training_utils.load_model(model_args["weights_path"],model_args["model_type"],model_args["supervision_types"], train_data.metadata())
+
+train_data = training_utils.initialize_features(train_data,model_args["feature_type"],model_args["feature_dim"])
+val_data = training_utils.initialize_features(train_data,model_args["feature_type"],model_args["feature_dim"])
+
+encodings_dict = training_utils.get_encodings(model,train_data)
 #%%
-def load_data(folder_path,load_test = False):
-    if load_test:
-        names = ["train","validation","test"]
-    else:
-        names = ["train","validation"]
-    datasets = []
-    for name in names:
-        path = folder_path+name+".pt"
-        datasets.append(torch.load(path))
-    
-    return datasets
+# def plot_pca_3D(gene_encodings,disease_encodings,title,n_components,plot_components):
 
-def initialize_features(data,feature,dim,inplace=False):
-    if inplace:
-        data_object = data
-    else:
-        data_object = copy.copy(data)
-    for nodetype, store in data_object.node_items():
-        if feature == "random":
-            data_object[nodetype].x = torch.rand(store["num_nodes"],dim)
-        if feature == "ones":
-            data_object[nodetype].x = torch.ones(store["num_nodes"],dim)
-    return data_object
+#     z1 = disease_encodings.detach().cpu().numpy()
+#     z2 = gene_encodings.detach().cpu().numpy()
+#     gene_encodings = encodings["gene_protein"]
+#     disease_encodings = encodings["disease"]
 
-def load_model(state_dict,params,metadata):
-    model = base_model(params,metadata)
-    model.load_state_dict(state_dict)
-    return model
+#     return gene_encodings, disease_encodings
+#     z = np.concatenate([z1,z2])
 
-def load_experiment(eid,date,metadata):
-    """date format: d_m_y"""
-    df_path = f"{experiments_folder}experiment_{date}.parquet"
-    weights_path = f"{experiments_folder}experiment_{eid}_{date}__.pth"
+#     num_diseases = z1.shape[0]
+#     num_genes = z2.shape[0]
 
-    df = pd.read_parquet(df_path)
-    #TODO: this is only temporal, remove after fix
-    df["conv_type"] = df.conv_type.apply(lambda x: x.split(".")[-1].rstrip("\'>"))
-    df["activation"] = torch.nn.LeakyReLU
-    params = df.loc[eid].to_dict()
-    weights = torch.load(weights_path,map_location=torch.device(device))
+#     pca = PCA(n_components=n_components)
+#     components = pca.fit_transform(z)
+#     fig = px.scatter_3d(components, x=plot_components[0], y=plot_components[1],z=plot_components[2], color=['b']*num_diseases + ['r']*num_genes, title=title,hover_name=node_names)
 
-    model = base_model(params,metadata)
-    model.load_state_dict(weights)
+#     fig.show()
 
-    return model,params
 
-def load_node_csv(path, index_col,type_col, **kwargs):
-    """Returns node dataframe and a dict of mappings for each node type. 
-    Each mapping maps from original df index to "heterodata index" { node_type : { dataframe_index : heterodata_index}}"""
-    df = pd.read_csv(path, **kwargs,index_col=index_col)
-    node_types = df[type_col].unique()
-    mappings_dict = dict()
-    for node_type in node_types:
-        mapping = {index: i for i, index in enumerate(df[df[type_col] == node_type].index.unique())}
-        mappings_dict[node_type] = mapping
 
-    return df,mappings_dict
+# def plot_umap(encodings_dict,n_components,plot_components,title,colors):
+#     node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
+#     encodings = [tensor.detach().cpu().numpy() for tensor in encodings_dict.values()]
+#     z = np.concatenate(encodings)
+#     umap = UMAP(n_components=n_components, init='random', random_state=0) 
+#     proj = umap.fit_transform(z)
+#     proj_df = pd.DataFrame(proj)
 
-@torch.no_grad()
-def get_encodings(model,data):
-    model.eval()
-    encodings = model.encode(data)
-    return encodings
+#     sub_dfs = []
+#     for node_type in encodings_dict.keys():
+#         sub_df = node_info[node_info.node_type == node_type]
+#         node_map_series = pd.Series(node_map[node_type],name="tensor_index")
+#         sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index(drop=True)
 
-def plot_pca(gene_encodings,disease_encodings,title,n_components,plot_components):
+#         sub_dfs.append(sub_df)
 
-    z1 = disease_encodings.detach().cpu().numpy()
-    z2 = gene_encodings.detach().cpu().numpy()
+#     df = pd.concat(sub_dfs,ignore_index=True)
+#     df = df.merge(proj_df,left_index=True,right_index=True).fillna(-1).astype({"comunidades_infomap":str,"comunidades_louvain":str})
 
-    z = np.concatenate([z1,z2])
+#     fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=colors, title=title,hover_name="node_name")
 
-    num_diseases = z1.shape[0]
-    num_genes = z2.shape[0]
+#     fig.show()
 
-    pca = PCA(n_components=n_components)
-    components = pca.fit_transform(z)
-    fig = px.scatter(components, x=plot_components[0], y=plot_components[1], color=['b']*num_diseases + ['r']*num_genes, title=title,hover_name=node_names)
+# def plot_tsne(encodings_dict,n_components,plot_components,title,colors):
+#     node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
+#     encodings = [tensor.detach().cpu().numpy() for tensor in encodings_dict.values()]
+#     z = np.concatenate(encodings)
+#     tsne = TSNE(n_components=n_components, random_state=0)
+#     proj = tsne.fit_transform(z)
+#     proj_df = pd.DataFrame(proj)
 
-    fig.show()
+#     sub_dfs = []
+#     for node_type in encodings_dict.keys():
+#         sub_df = node_info[node_info.node_type == node_type]
+#         node_map_series = pd.Series(node_map[node_type],name="tensor_index")
+#         sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index(drop=True)
 
-def plot_pca_3D(gene_encodings,disease_encodings,title,n_components,plot_components):
+#         sub_dfs.append(sub_df)
 
-    z1 = disease_encodings.detach().cpu().numpy()
-    z2 = gene_encodings.detach().cpu().numpy()
-    gene_encodings = encodings["gene_protein"]
-    disease_encodings = encodings["disease"]
+#     df = pd.concat(sub_dfs,ignore_index=True)
+#     df = df.merge(proj_df,left_index=True,right_index=True).fillna(-1).astype({"comunidades_infomap":str,"comunidades_louvain":str})
 
-    return gene_encodings, disease_encodings
-    z = np.concatenate([z1,z2])
+#     fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=colors, title=title,hover_name="node_name")
 
-    num_diseases = z1.shape[0]
-    num_genes = z2.shape[0]
+#     fig.show()
 
-    pca = PCA(n_components=n_components)
-    components = pca.fit_transform(z)
-    fig = px.scatter_3d(components, x=plot_components[0], y=plot_components[1],z=plot_components[2], color=['b']*num_diseases + ['r']*num_genes, title=title,hover_name=node_names)
+#%%
+def get_tensor_index_df(node_data,node_map,node_info,encodings_dict):
+    sub_dfs = []
+    for node_type in encodings_dict.keys():
+        sub_df = node_data[node_data.node_type == node_type]
+        node_map_series = pd.Series(node_map[node_type],name="tensor_index")
+        sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index()
 
-    fig.show()
+        sub_dfs.append(sub_df)
+    tensor_df = pd.concat(sub_dfs, ignore_index=True)
+    df = pd.merge(tensor_df,node_info[["node_index","comunidades_infomap","comunidades_louvain","degree_gda","degree_pp","degree_dd"]], on="node_index").fillna(-2)
+    df = df.astype({"comunidades_louvain":str,"comunidades_infomap":str})
+    df["total_degree"] = df.degree_pp + df.degree_gda + df.degree_dd
+    return df
 
-def plot_pca_with_communities(gene_encodings,disease_encodings,title,n_components,plot_components,node_info,partition="comunidades_louvain"):
-
-    z1 = disease_encodings.detach().cpu().numpy()
-    z2 = gene_encodings.detach().cpu().numpy()
-
-    z = np.concatenate([z1,z2])
-
-    pca = PCA(n_components=n_components)
-    components = pca.fit_transform(z)
-
-    node_clusters = node_info[["node_index",partition]].dropna()
-    node_map_series = pd.Series(node_map["disease"],name="tensor_index")
-    node_clusters = node_clusters.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").fillna(-1)
-
-    df = pd.DataFrame(components)
-    df["node_names"] = node_names
-    df = df.merge(node_clusters[["tensor_index",partition]],left_index=True,right_on="tensor_index",how="left").reset_index(drop=True).fillna(-2)
-    df[partition] = df[partition].astype(str)
-    
-    fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=partition, title=title,hover_name="node_names")
-    fig.show()
-
-def plot_pca_all_types(encodings_dict,title,n_components,plot_components):
+def plot_pca(node_data,node_map,node_info,encodings_dict,title,n_components,plot_components,color="node_type"):
 
     encodings = [tensor.detach().cpu().numpy() for tensor in encodings_dict.values()]
     z = np.concatenate(encodings)
+
+    scaler = StandardScaler().fit(z)
+    z = scaler.transform(z)
 
     pca = PCA(n_components=n_components)
     components = pca.fit_transform(z)
     component_df = pd.DataFrame(components)
 
-    sub_dfs = []
-    for node_type in encodings_dict.keys():
-        sub_df = node_data[node_data.node_type == node_type]
-        node_map_series = pd.Series(node_map[node_type],name="tensor_index")
-        sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index(drop=True)
+    tensor_df = get_tensor_index_df(node_data,node_map,node_info,encodings_dict)
+    df = pd.merge(component_df,tensor_df,left_index=True,right_index=True)
+    df[["degree_gda","degree_pp","degree_dd","total_degree"]] = np.log(df[["degree_gda","degree_pp","degree_dd","total_degree"]])
 
-        sub_dfs.append(sub_df)
-
-    df = pd.concat(sub_dfs,ignore_index=True)
-    df = df.merge(component_df,left_index=True,right_index=True)
-
-    fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color="node_type", title=title,hover_name="node_name")
+    fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=color, title=title,hover_name="node_name")
 
     fig.show()
 
-def plot_umap(encodings_dict,n_components,plot_components,title,colors):
-    node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
+
+def plot_pca_3D(node_data,node_map,node_info,encodings_dict,title,n_components,plot_components,color="node_type"):
+
     encodings = [tensor.detach().cpu().numpy() for tensor in encodings_dict.values()]
     z = np.concatenate(encodings)
-    umap = UMAP(n_components=n_components, init='random', random_state=0) 
-    proj = umap.fit_transform(z)
-    proj_df = pd.DataFrame(proj)
 
-    sub_dfs = []
-    for node_type in encodings_dict.keys():
-        sub_df = node_info[node_info.node_type == node_type]
-        node_map_series = pd.Series(node_map[node_type],name="tensor_index")
-        sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index(drop=True)
+    scaler = StandardScaler().fit(z)
+    z = scaler.transform(z)
 
-        sub_dfs.append(sub_df)
+    pca = PCA(n_components=n_components)
+    components = pca.fit_transform(z)
+    component_df = pd.DataFrame(components)
 
-    df = pd.concat(sub_dfs,ignore_index=True)
-    df = df.merge(proj_df,left_index=True,right_index=True).fillna(-1).astype({"comunidades_infomap":str,"comunidades_louvain":str})
+    tensor_df = get_tensor_index_df(node_data,node_map,node_info,encodings_dict)
+    df = pd.merge(component_df,tensor_df,left_index=True,right_index=True)
+    df[["degree_gda","degree_pp","degree_dd","total_degree"]] = np.log(df[["degree_gda","degree_pp","degree_dd","total_degree"]])
 
-    fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=colors, title=title,hover_name="node_name")
+    fig = px.scatter_3d(df, x=plot_components[0], y=plot_components[1],z=plot_components[2], color=color, title=title,hover_name="node_name")
 
     fig.show()
 
-def plot_tsne(encodings_dict,n_components,plot_components,title,colors):
-    node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
+
+def get_tsne(node_data,node_map,node_info,encodings_dict,n_components):
     encodings = [tensor.detach().cpu().numpy() for tensor in encodings_dict.values()]
     z = np.concatenate(encodings)
-    tsne = TSNE(n_components=n_components, random_state=0)
+
+    scaler = StandardScaler().fit(z)
+    z = scaler.transform(z)
+
+    tsne = TSNE(n_components=n_components, random_state=viz_config["misc"]["seed"])
     proj = tsne.fit_transform(z)
     proj_df = pd.DataFrame(proj)
 
-    sub_dfs = []
-    for node_type in encodings_dict.keys():
-        sub_df = node_info[node_info.node_type == node_type]
-        node_map_series = pd.Series(node_map[node_type],name="tensor_index")
-        sub_df = sub_df.merge(node_map_series,left_on="node_index",right_index=True,how="right").sort_values(by="tensor_index").reset_index(drop=True)
+    tensor_df = get_tensor_index_df(node_data,node_map,node_info,encodings_dict)
+    df = pd.merge(proj_df,tensor_df,left_index=True,right_index=True)
+    df[["degree_gda","degree_pp","degree_dd","total_degree"]] = np.log(df[["degree_gda","degree_pp","degree_dd","total_degree"]])
 
-        sub_dfs.append(sub_df)
+    return df
 
-    df = pd.concat(sub_dfs,ignore_index=True)
-    df = df.merge(proj_df,left_index=True,right_index=True).fillna(-1).astype({"comunidades_infomap":str,"comunidades_louvain":str})
-
+def plot_df(df,title,plot_components,colors):
     fig = px.scatter(df, x=plot_components[0], y=plot_components[1], color=colors, title=title,hover_name="node_name")
-
     fig.show()
 
-#%%
-results = pd.read_parquet(experiments_folder+"experiment_18_04_23.parquet").sort_values(by="auc",ascending=False)
+def plot_tsne(node_data,node_map,node_info,encodings_dict,title,n_components,plot_components,colors):
+    
+    df = get_tsne(node_data,node_map,node_info,encodings_dict,n_components)
+    plot_df(df,title,plot_components,colors)
 
-train_data, val_data = load_data(data_folder+"split_dataset/")
-node_data,node_map = load_node_csv(data_folder+"nohub_graph_nodes.csv","node_index","node_type")
-node_names = node_data[(node_data.node_type == "disease") | (node_data.node_type == "gene_protein")].sort_values(by="node_type").node_name.values
-node_info = pd.read_csv(data_folder+"nohub_graph_node_data.csv")
 #%%
-eid = 34
-date = "18_04_23"
-model,params = load_experiment(eid,date,train_data.metadata())
-train_data = initialize_features(train_data,params["feature_type"],params["feature_dim"])
-val_data = initialize_features(train_data,params["feature_type"],params["feature_dim"])
+node_data_args = [node_csv,node_map,node_info,encodings_dict]
 
-encodings_dict = get_encodings(model,train_data)
+plot_pca_3D(*node_data_args,"PCA. Color según grado GDA",3,[0,1,2],"degree_gda")
+# %%
+plot_tsne(*node_data_args,"TSNE",2,[0,1],"degree_gda")
 #%%
+tsne_df = get_tsne(*node_data_args,2)
+#%%
+plot_df(tsne_df,"aver",[0,1],"total_degree")

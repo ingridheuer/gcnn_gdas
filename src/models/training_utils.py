@@ -4,6 +4,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import copy
 import datetime
+import pandas as pd 
+import sys
+sys.path.append("..")
 
 @torch.no_grad()
 def hits_at_k(y_true,x_prob,k,key) -> dict:
@@ -215,12 +218,32 @@ def load_model(weights_path,model_type,supervision_types,metadata,model_args=Non
     weights = torch.load(weights_path,map_location=torch.device(device))
 
     if model_type == "base_model":
-        import base_model
-        model = base_model(model_args,metadata,supervision_types)
+        from models import base_model
+        model = base_model.base_model(model_args,metadata,supervision_types)
     elif model_type == "sage_ones":
-        import sage_ones
+        from models import sage_ones
         model = sage_ones.Model(metadata,supervision_types)
     
     model.load_state_dict(weights)
     
     return model
+
+@torch.no_grad()
+def get_encodings(model,data):
+    model.eval()
+    x_dict = data.x_dict
+    edge_index = data.edge_index_dict
+    encodings = model.encoder(x_dict,edge_index)
+    return encodings
+
+def load_node_csv(path, index_col,type_col, **kwargs):
+    """Returns node dataframe and a dict of mappings for each node type. 
+    Each mapping maps from original df index to "heterodata index" { node_type : { dataframe_index : heterodata_index}}"""
+    df = pd.read_csv(path, **kwargs,index_col=index_col)
+    node_types = df[type_col].unique()
+    mappings_dict = dict()
+    for node_type in node_types:
+        mapping = {index: i for i, index in enumerate(df[df[type_col] == node_type].index.unique())}
+        mappings_dict[node_type] = mapping
+
+    return df,mappings_dict
