@@ -252,3 +252,5 @@ exploration/model_exploration/figures/rsage_random_5_gda_only.png
 exploration/r_scripts/signor_mappings.R
 exploration/notebooks/network_analysis/aver.ipynb
 src/models/explain_model.py
+exploration/notebooks/run_in_colab/base_model.py
+exploration/notebooks/run_in_colab/training_utils.py

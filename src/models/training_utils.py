@@ -208,7 +208,7 @@ def initialize_features(data,feature,dim,inplace=False):
 
 def save_model(model,folder_path,model_name):
     date = datetime.datetime.now()
-    fdate = date.strftime("%d_%m_%y__")
+    fdate = date.strftime("%d_%m_%y__%H_%M_%S")
     fname = f"{model_name}_{fdate}"
     torch.save(model.state_dict(), f"{folder_path}{fname}.pth")
 
