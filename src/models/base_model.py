@@ -116,10 +116,14 @@ class base_message_layer(torch.nn.Module):
         super().__init__()
 
         # Currently SageConv or GATConv, might have to modify this to support other Convs
-        layer_dict = {"GATConv":GATConv,"SAGEConv":SAGEConv}
+
         conv_type = model_params["conv_type"]
         
-        self.conv = layer_dict[conv_type]((-1,-1), model_params["hidden_channels"],aggr=model_params["micro_aggregation"])
+        if conv_type == "SAGEConv":
+            self.conv = SAGEConv((-1,-1), model_params["hidden_channels"],aggr=model_params["micro_aggregation"],add_self_loops=False)
+        elif conv_type == "GATConv":
+            self.conv = GATConv((-1,-1), model_params["hidden_channels"],concat=False,heads=model_params["heads"],aggr=model_params["micro_aggregation"],add_self_loops=False)
+        
         self.normalize = model_params["L2_norm"]
         self.skip = model_params["layer_connectivity"]
         self.is_output_layer = is_output_layer
@@ -300,6 +304,10 @@ class base_model(torch.nn.Module):
             if arg not in model_params:
                 model_params[arg] = default_model_params[arg]
         
+        if model_params["msg_passing_layers"] == 0:
+            print("Warning: cant initialize model with 0 message passing layers. \"msg_passing_layers\" value will be changed to 1")
+            model_params["msg_passing_layers"] = 1
+
         self.encoder = base_encoder(model_params,metadata)
         self.decoder = inner_product_decoder()
         self.loss_fn = torch.nn.BCELoss()
