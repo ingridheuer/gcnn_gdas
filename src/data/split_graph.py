@@ -4,8 +4,8 @@ from torch_geometric.data import HeteroData
 import torch_geometric.transforms as T
 from torch_geometric import seed_everything
 import pandas as pd
-import random
 import os
+import pickle
 # %%
 seed = 4
 
@@ -20,8 +20,6 @@ if not os.path.exists(save_to_path):
     print("save_to_path dir does not exist, a new directory will be created")
     os.makedirs(save_to_path)
 # %%
-
-
 def load_node_csv(path, index_col, type_col, **kwargs):
     """Returns node dataframe and a dict of mappings for each node type. 
     Each mapping maps from original df index to "heterodata index" { node_type : { dataframe_index : heterodata_index}}"""
@@ -90,7 +88,6 @@ def get_reverse_types(edge_types):
 
     return newlist, reversed_newlist
 # %%
-
 
 node_data, node_map = load_node_csv(node_csv_path, "node_index", "node_type")
 edge_data, edge_index = load_edge_csv(
@@ -165,4 +162,9 @@ if confirm == "y":
     for dataset, name in zip(datasets, names):
         path = save_to_path+name+".pt"
         torch.save(dataset, path)
+
+f"Saving node mapping from {node_csv_path} \n to {save_to_path}"
+with open(save_to_path+"node_map.pickle", 'wb') as handle:
+    pickle.dump(node_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
 # %%

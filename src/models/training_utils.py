@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import copy
 import datetime
-import pandas as pd 
+import pandas as pd
+import pickle 
 import sys
 sys.path.append("..")
 
@@ -192,7 +193,10 @@ def load_data(folder_path,load_test = False):
         path = folder_path+name+".pt"
         datasets.append(torch.load(path))
     
-    return datasets
+    with open(folder_path+"node_map.pickle", 'rb') as handle:
+        node_map = pickle.load(handle)
+    
+    return datasets, node_map
 
 def initialize_features(data,feature,dim,inplace=False):
     if inplace:
