@@ -1,7 +1,7 @@
 # visualization settings
 
 [data]
-dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/"
+dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_0/"
 results_folder_path = "../../data/experiments/merged_types_experiment/"
 node_data_path = "../../data/processed/graph_data_nohubs/merged_types/merged_nodes.csv"
 node_info_path = "../../data/processed/graph_data_nohubs/merged_types/nohub_graph_node_data.csv"

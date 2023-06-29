@@ -24,27 +24,22 @@ def inverse_map_heterodata(data,node_map):
     edge_dict = {}
     for edge_type in data.edge_types:
         type_dict = {}
-        if len(data[edge_type].keys()) > 1:
-            edge_tensor = data[edge_type]["edge_index"]
-            edge_list = tensor_to_edgelist(edge_tensor)
-            mapped_edge_list = reverse_map(node_map,edge_list,edge_type)
+        edge_tensor = data[edge_type]["edge_index"]
+        edge_list = tensor_to_edgelist(edge_tensor)
+        mapped_edge_list = reverse_map(node_map,edge_list,edge_type)
 
+        type_dict["message_passing_edges"] = mapped_edge_list
+
+        if "edge_label_index" in data[edge_type].keys():
             labeled_edges_tensor = data[edge_type]["edge_label_index"]
             labeled_edges_list = tensor_to_edgelist(labeled_edges_tensor)
             mapped_labeled_edges_list = reverse_map(node_map,labeled_edges_list,edge_type)
 
             edge_labels = data[edge_type]["edge_label"].tolist()
 
-            type_dict["message_passing_edges"] = mapped_edge_list
             type_dict["supervision_edges"] = mapped_labeled_edges_list
             type_dict["supervision_labels"] = edge_labels
-        else:
-            edge_tensor = data[edge_type]["edge_index"]
-            edge_list = tensor_to_edgelist(edge_tensor)
-            mapped_edge_list = reverse_map(node_map,edge_list,edge_type)
-
-            type_dict["message_passing_edges"] = mapped_edge_list
-         
+ 
         edge_dict[edge_type] = type_dict
     
     return edge_dict
