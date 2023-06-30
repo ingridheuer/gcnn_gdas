@@ -6,6 +6,10 @@ from torch_geometric import seed_everything
 import pandas as pd
 import os
 import pickle
+
+import sys
+sys.path.append("..")
+from models.training_utils import NegativeSampler, get_tensor_index_df
 # %%
 seed = 4
 
@@ -100,15 +104,41 @@ p_val = 0.1
 p_test = 0.1
 p_train = round(1 - p_val - p_test, 1)
 
-split_transform = T.RandomLinkSplit(num_val=p_val, num_test=p_test, is_undirected=True, add_negative_train_samples=True,
+split_transform = T.RandomLinkSplit(num_val=p_val, num_test=p_test, is_undirected=True, add_negative_train_samples=False,
                                     disjoint_train_ratio=0.2, edge_types=edge_types, rev_edge_types=rev_edge_types)
 transform_dataset = T.Compose(
     [split_transform, T.ToSparseTensor(remove_edge_index=False)])
 
 train_data, val_data, test_data = transform_dataset(data)
+#%%
+# Generate Deg**0.75 negative sampling distribution for val and test splits
+edge_type = ("gene_protein", "gda", "disease")
+node_info = pd.read_csv(data_folder+"merged_node_info.csv",index_col=0)
+tensor_df = get_tensor_index_df(node_data,node_map,node_info)
+
+src_degrees = tensor_df[tensor_df.node_type == "gene_protein"]["degree_gda"].values
+dst_degrees = tensor_df[tensor_df.node_type == "disease"]["degree_gda"].values
+
+negative_sampler = NegativeSampler(data,edge_type,src_degrees,dst_degrees)
+#%%
+val_labels = val_data[edge_type]["edge_label"]
+val_labeled_edges = val_data[edge_type]["edge_label_index"]
+index = torch.nonzero(val_labels == 1).flatten()
+val_positive_edges = val_labeled_edges[:,index]
+
+new_val_label_index, _ = negative_sampler.get_labeled_tensors(val_positive_edges,"corrupt_both")
+val_data[edge_type]["edge_label_index"] = new_val_label_index
+
+test_labels = test_data[edge_type]["edge_label"]
+test_labeled_edges = test_data[edge_type]["edge_label_index"]
+index = torch.nonzero(test_labels == 1).flatten()
+test_positive_edges = test_labeled_edges[:,index]
+
+new_test_label_index, _ = negative_sampler.get_labeled_tensors(test_positive_edges,"corrupt_both") 
+
+test_data[edge_type]["edge_label_index"] = new_test_label_index
 # %%
 # Test if splits are correct
-
 
 def test_equal_num_edges(dataset):
     num_gda_r = dataset[("disease", "gda", "gene_protein")
@@ -167,4 +197,6 @@ f"Saving node mapping from {node_csv_path} \n to {save_to_path}"
 with open(save_to_path+"node_map.pickle", 'wb') as handle:
     pickle.dump(node_map, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
+# Save tensor dataframe 
+tensor_df.to_csv(save_to_path+"tensor_df.csv")
 # %%
