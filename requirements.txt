@@ -32,6 +32,7 @@ torch_sparse==0.6.17+pt20cpu
 umap_learn==0.5.3
 wordcloud==1.8.2.2
 torchviz==0.0.2
+pyg-lib==0.2.0+pt20cpu
 pyarrow
 fastparquet
 captum
