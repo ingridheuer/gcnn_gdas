@@ -15,7 +15,7 @@ torch.manual_seed(seed)
 #%%
 # Load data and configure results folder
 # Datasets are already split
-data_folder = config.train_config["data"]["dataset_folder_path"]
+data_folder = config.train_config["data"]["dataset_folder_path"] + f"seed_{seed}/"
 save_to_path = config.train_config["data"]["results_folder_path"]
 
 if not os.path.exists(save_to_path):
@@ -23,7 +23,9 @@ if not os.path.exists(save_to_path):
     os.makedirs(save_to_path)
 
 
-train_data,val_data = training_utils.load_data(data_folder)
+datasets, node_map = training_utils.load_data(data_folder)
+train_data, val_data = datasets
+full_dataset = torch.load(data_folder+"full_dataset.pt")
 
 # Initialize features
 feature_type = config.train_config["features"]["feature_type"]
@@ -42,11 +44,13 @@ supervision_types_mapped = [supervision_type_map[edge_type] for edge_type in sup
 model_type = config.train_config["model"]["model"]
 if model_type == "sage_ones":
     model = sage_ones.Model(train_data.metadata(),supervision_types_mapped)
+else:
+    print("Invalid model type")
 
 # Train model
 metric_map = {"roc_auc":roc_auc_score, "average_precision":average_precision_score, "accuracy":accuracy_score}
 
-def train_model(model,train_set,val_set,params,plot_title=f"Training {model_type}"):
+def train_model(model,train_set,val_set,full_set,params,sample_epochs,plot_title=f"Training {model_type}"):
     optimizer = torch.optim.Adam(model.parameters(), lr=params['lr'], weight_decay=params["weight_decay"])
     train_losses = []
     val_losses = []
@@ -57,7 +61,16 @@ def train_model(model,train_set,val_set,params,plot_title=f"Training {model_type
     epochs = params["epochs"]
 
     early_stopper = training_utils.EarlyStopper(params["patience"],params["delta"])
+    negative_sampler = training_utils.NegativeSampler(full_set,("gene_protein","gda","disease"),full_set["gene_protein"]["degree_gda"],full_set["disease"]["degree_gda"])
+
+    train_label_index = train_set["gene_protein","gda","disease"]["edge_label_index"]
     for epoch in range(epochs):
+        #Sample negatives
+        if epoch%sample_epochs == 0:
+            new_train_label_index, new_train_label = negative_sampler.get_labeled_tensors(train_label_index,"corrupt_both")
+            train_set["gene_protein","gda","disease"]["edge_label_index"] = new_train_label_index
+            train_set["gene_protein","gda","disease"]["edge_label"] = new_train_label
+
         train_loss = training_utils.train(model,optimizer,train_set)
         train_score = training_utils.test(model,train_set,metric)
 
@@ -71,7 +84,7 @@ def train_model(model,train_set,val_set,params,plot_title=f"Training {model_type
         val_losses.append(val_loss)
 
         if epoch%50 == 0:
-            print(train_loss)
+            print(round(train_loss,2))
         
         if early_stopper.early_stop(val_loss):
             print("Early stopping")
@@ -87,7 +100,7 @@ def train_model(model,train_set,val_set,params,plot_title=f"Training {model_type
 training_params = config.train_config["train_params"]
 plot_title = config.train_config["misc"]["plot_title"]
 
-trained_model, val_auc, curve_data = train_model(model,train_data,val_data,training_params,plot_title)
+trained_model, val_auc, curve_data = train_model(model,train_data,val_data,full_dataset,training_params,10,plot_title)
 #%%
 model_name = config.train_config["misc"]["model_name"]
 date = datetime.datetime.now()
@@ -102,3 +115,4 @@ if config.train_config["misc"]["save_plot_data"]:
         pickle.dump(curve_data, f)
 
 # %%
+training_utils.full_test(trained_model,val_data,200,False)

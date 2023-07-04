@@ -137,6 +137,10 @@ test_positive_edges = test_labeled_edges[:,index]
 new_test_label_index, _ = negative_sampler.get_labeled_tensors(test_positive_edges,"corrupt_both") 
 
 test_data[edge_type]["edge_label_index"] = new_test_label_index
+#%%
+# add degree data to full_dataset (we use this data in negative sampling)
+data["gene_protein"]["degree_gda"] = src_degrees
+data["disease"]["degree_gda"] = dst_degrees
 # %%
 # Test if splits are correct
 

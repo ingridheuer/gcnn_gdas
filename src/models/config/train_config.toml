@@ -21,8 +21,8 @@ model = "sage_ones"
 supervision_types = ["gda"]
 
 [misc]
-seed = 0
+seed = 4
 save_plot_data = true
 save_trained_model = true
 plot_title = "Merged types experiment"
-model_name = "sage_ones_merged_experiment"
+model_name = "sage_ones_first_negatives_exp_2"
