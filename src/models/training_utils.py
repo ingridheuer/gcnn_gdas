@@ -7,6 +7,7 @@ import datetime
 import pandas as pd
 import pickle 
 import sys
+import tqdm
 sys.path.append("..")
 
 @torch.no_grad()
@@ -36,9 +37,9 @@ def hits_at_k(y_true,x_prob,k,key) -> dict:
 def train(model, optimizer, data):
     model.train()
     optimizer.zero_grad()
-    preds = model(data.x_dict,data.adj_t_dict,data.edge_label_index_dict)
+    predictions = model(data.x_dict,data.adj_t_dict,data.edge_label_index_dict)
     edge_label = data.edge_label_dict
-    loss = model.loss(preds, edge_label)
+    loss = model.loss(predictions, edge_label)
     loss.backward()
     optimizer.step()
 
@@ -47,70 +48,73 @@ def train(model, optimizer, data):
 @torch.no_grad()
 def get_val_loss(model,val_data):
     model.eval()
-    preds = model(val_data.x_dict,val_data.adj_t_dict,val_data.edge_label_index_dict)
+    predictions = model(val_data.x_dict,val_data.adj_t_dict,val_data.edge_label_index_dict)
     edge_label = val_data.edge_label_dict
-    loss = model.loss(preds, edge_label)
+    loss = model.loss(predictions, edge_label)
 
     return loss.item()
 
-def get_metrics(y_true, x_pred):
+def get_metrics(y_true, x_pred,y_score):
    acc = round(accuracy_score(y_true,x_pred),2)
    ap = round(average_precision_score(y_true, x_pred),2)
-   roc_auc = round(roc_auc_score(y_true,x_pred),2)
+   roc_auc = round(roc_auc_score(y_true,y_score),2)
 
    return acc,ap ,roc_auc
   
 @torch.no_grad()
-def test(model,data,metric):
+def test(model,data):
   model.eval()
-  preds = model(data.x_dict,data.adj_t_dict,data.edge_label_index_dict)
+  predictions = model(data.x_dict,data.adj_t_dict,data.edge_label_index_dict)
   edge_label = data.edge_label_dict
-  all_preds = []
+  all_scores = []
   all_true = []
-  for key,pred in preds.items():
-      pred_label = torch.round(pred)
-      ground_truth = edge_label[key]
-      all_preds.append(pred_label)
-      all_true.append(ground_truth)
-  total_predictions = torch.cat(all_preds, dim=0).cpu().numpy()
+  # por si el modelo predice más de un tipo de enlace, concatenamos todas las labels y preds
+  # en un solo tensor y calculamos una métrica global
+  for edge_type,y_score in predictions.items():
+      y_true = edge_label[edge_type]
+      all_scores.append(y_score)
+      all_true.append(y_true)
+  total_scores = torch.cat(all_scores, dim=0).cpu().numpy()
   total_true = torch.cat(all_true, dim=0).cpu().numpy()
-  score = metric(total_true,total_predictions)
-  return score
+  roc_auc = roc_auc_score(total_true,total_scores)
+  return round(roc_auc,3)
   
 
 @torch.no_grad()
 def full_test(model,data,k,global_score=True):
   model.eval()
-  preds = model(data.x_dict,data.adj_t_dict,data.edge_label_index_dict)
+  predictions = model(data.x_dict,data.adj_t_dict,data.edge_label_index_dict)
   edge_label = data.edge_label_dict
   metrics = {}
 
   if global_score:
     all_scores = []
-    all_preds = []
+    # all_preds = []
     all_true = []
-    for key,pred in preds.items():
-        pred_label = torch.round(pred)
-        ground_truth = edge_label[key]
-        all_scores.append(pred)
-        all_preds.append(pred_label)
-        all_true.append(ground_truth)
+    for edge_type,y_score in predictions.items():
+        # pred_label = torch.round(pred)
+        y_true = edge_label[edge_type]
+        all_scores.append(y_score)
+        # all_preds.append(pred_label)
+        all_true.append(y_true)
 
-    total_predictions = torch.cat(all_preds, dim=0)
+    # total_predictions = torch.cat(all_preds, dim=0)
     total_true = torch.cat(all_true, dim=0)
     total_scores = torch.cat(all_scores,dim=0)
+    roc_auc = roc_auc_score(total_true.cpu().numpy(),total_scores.cpu().numpy())
 
-    acc, ap, roc_auc =  get_metrics(total_true.cpu().numpy(), total_predictions.cpu().numpy())
+    # acc, ap, roc_auc =  get_metrics(total_true.cpu().numpy(), total_predictions.cpu().numpy())
     hits_k = hits_at_k(total_true,total_scores,k,"all")
-    metrics["all"] = [acc,ap,roc_auc,hits_k]
+    metrics["all"] = [round(roc_auc,3),hits_k]
 
   else:
-    for key,pred in preds.items():
-        pred_label = torch.round(pred)
-        ground_truth = edge_label[key]
-        acc, ap, roc_auc = get_metrics(ground_truth.cpu().numpy(), pred_label.cpu().numpy())
-        hits_k = hits_at_k(ground_truth,pred,k,key)
-        metrics[key] = [acc,ap, roc_auc,hits_k]
+    for edge_type,y_score in predictions.items():
+        # pred_label = torch.round(pred)
+        y_true = edge_label[edge_type]
+        roc_auc = roc_auc_score(y_true.cpu().numpy(),y_score.cpu().numpy())
+        # acc, ap, roc_auc = get_metrics(ground_truth.cpu().numpy(), pred_label.cpu().numpy(), pred.cpu().numpy())
+        hits_k = hits_at_k(y_true,y_score,k,edge_type)
+        metrics[edge_type] = [round(roc_auc,3),hits_k]
   
   return metrics
 

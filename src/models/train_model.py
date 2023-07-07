@@ -6,12 +6,13 @@ import os
 import datetime
 import pickle
 import training_utils
+from torch_geometric import seed_everything
+from torch_geometric.loader import LinkNeighborLoader
 import sage_ones
 from sklearn.metrics import roc_auc_score, average_precision_score, accuracy_score
 
 seed = config.train_config["misc"]["seed"]
-random.seed(seed)
-torch.manual_seed(seed)
+seed_everything(seed)
 #%%
 # Load data and configure results folder
 # Datasets are already split
@@ -21,7 +22,6 @@ save_to_path = config.train_config["data"]["results_folder_path"]
 if not os.path.exists(save_to_path):
     print("save_to dir does not exist, a new directory will be created")
     os.makedirs(save_to_path)
-
 
 datasets, node_map = training_utils.load_data(data_folder)
 train_data, val_data = datasets
@@ -50,7 +50,7 @@ else:
 # Train model
 metric_map = {"roc_auc":roc_auc_score, "average_precision":average_precision_score, "accuracy":accuracy_score}
 
-def train_model(model,train_set,val_set,full_set,params,sample_epochs,plot_title=f"Training {model_type}"):
+def train_model(model,train_set,val_set,full_set,params,sample_epochs,sample_ratio,plot_title=f"Training {model_type}"):
     optimizer = torch.optim.Adam(model.parameters(), lr=params['lr'], weight_decay=params["weight_decay"])
     train_losses = []
     val_losses = []
@@ -62,20 +62,23 @@ def train_model(model,train_set,val_set,full_set,params,sample_epochs,plot_title
 
     early_stopper = training_utils.EarlyStopper(params["patience"],params["delta"])
     negative_sampler = training_utils.NegativeSampler(full_set,("gene_protein","gda","disease"),full_set["gene_protein"]["degree_gda"],full_set["disease"]["degree_gda"])
-
     train_label_index = train_set["gene_protein","gda","disease"]["edge_label_index"]
     for epoch in range(epochs):
-        #Sample negatives
+        #Resample supervision links every k epochs
         if epoch%sample_epochs == 0:
-            new_train_label_index, new_train_label = negative_sampler.get_labeled_tensors(train_label_index,"corrupt_both")
+            sample_index = torch.randint(high=train_label_index.shape[1], size=(round(sample_ratio*train_label_index.shape[1]),))
+            positive_sample = train_label_index[:,sample_index]
+
+            # positive_sample = train_label_index
+            new_train_label_index, new_train_label = negative_sampler.get_labeled_tensors(positive_sample,"corrupt_both")
             train_set["gene_protein","gda","disease"]["edge_label_index"] = new_train_label_index
             train_set["gene_protein","gda","disease"]["edge_label"] = new_train_label
 
         train_loss = training_utils.train(model,optimizer,train_set)
-        train_score = training_utils.test(model,train_set,metric)
+        train_score = training_utils.test(model,train_set)
 
         val_loss = training_utils.get_val_loss(model,val_set)
-        val_score = training_utils.test(model,val_set,metric)
+        val_score = training_utils.test(model,val_set)
 
         train_losses.append(train_loss)
         train_scores.append(train_score)
@@ -90,7 +93,7 @@ def train_model(model,train_set,val_set,full_set,params,sample_epochs,plot_title
             print("Early stopping")
             break
 
-    val_auc = training_utils.test(model,val_set,roc_auc_score)
+    val_auc = training_utils.test(model,val_set)
     curve_data = [train_losses,val_losses,train_scores,val_scores]
 
     training_utils.plot_training_stats(plot_title, *curve_data,"AUC")
@@ -100,7 +103,7 @@ def train_model(model,train_set,val_set,full_set,params,sample_epochs,plot_title
 training_params = config.train_config["train_params"]
 plot_title = config.train_config["misc"]["plot_title"]
 
-trained_model, val_auc, curve_data = train_model(model,train_data,val_data,full_dataset,training_params,10,plot_title)
+trained_model, val_auc, curve_data = train_model(model,train_data,val_data,full_dataset,training_params,10,0.8,plot_title)
 #%%
 model_name = config.train_config["misc"]["model_name"]
 date = datetime.datetime.now()
@@ -116,3 +119,4 @@ if config.train_config["misc"]["save_plot_data"]:
 
 # %%
 training_utils.full_test(trained_model,val_data,200,False)
+# %%

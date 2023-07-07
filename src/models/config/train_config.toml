@@ -10,7 +10,7 @@ metric = "roc_auc"
 
 [data]
 dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/"
-results_folder_path = "../../data/experiments/merged_types_experiment/"
+results_folder_path = "../../data/experiments/merged_types_experiment/bootstrap_exp/"
 
 [features]
 feature_type = "ones"
@@ -25,4 +25,4 @@ seed = 4
 save_plot_data = true
 save_trained_model = true
 plot_title = "Merged types experiment"
-model_name = "sage_ones_first_negatives_exp_2"
+model_name = "sage_ones_new_ratio"

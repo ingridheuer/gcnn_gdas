@@ -1,13 +1,12 @@
 # visualization settings
 
 [data]
-dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_0/"
+dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_4/"
 results_folder_path = "../../data/experiments/merged_types_experiment/"
-node_data_path = "../../data/processed/graph_data_nohubs/merged_types/merged_nodes.csv"
-node_info_path = "../../data/processed/graph_data_nohubs/merged_types/nohub_graph_node_data.csv"
+tensor_df_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_4/tensor_df.csv"
 
 [model]
-weights_path = "../../data/experiments/merged_types_experiment/sage_ones_merged_experiment_13_06_23__15_59.pth"
+weights_path = "../../data/experiments/merged_types_experiment/sage_ones_first_negatives_exp_04_07_23__12_07.pth"
 model_type = "sage_ones"
 supervision_types = ["gda"]
 feature_type = "ones"
@@ -16,5 +15,5 @@ feature_dim = 10
 [misc]
 seed = 0
 save_plot_data = true
-plot_title = "Merged types experiment"
-model_name = "sage_ones_merged_experiment"
+plot_title = "Negative sampling experiment"
+model_name = "negative_sampling_experiment"
