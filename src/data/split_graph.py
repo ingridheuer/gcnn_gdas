@@ -11,7 +11,7 @@ import sys
 sys.path.append("..")
 from models.training_utils import NegativeSampler, get_tensor_index_df
 # %%
-seed = 5
+seed = 4
 
 seed_everything(seed)
 

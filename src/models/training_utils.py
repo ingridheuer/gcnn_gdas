@@ -203,6 +203,8 @@ def load_data(folder_path,load_test = False):
     return datasets, node_map
 
 def initialize_features(data,feature,dim,inplace=False):
+    feature_options = ["random","random_xavier","ones"]
+    assert feature in feature_options, f"{feature} is not a valid feature option, try one of {feature_options}"
     if inplace:
         data_object = data
     else:
@@ -210,7 +212,11 @@ def initialize_features(data,feature,dim,inplace=False):
     for nodetype, store in data_object.node_items():
         if feature == "random":
             data_object[nodetype].x = torch.rand(store["num_nodes"],dim)
-        if feature == "ones":
+        elif feature == "random_xavier":
+            emb = torch.nn.Parameter(torch.Tensor(store["num_nodes"], dim), requires_grad = False)
+            torch.nn.init.xavier_uniform_(emb)
+            data_object[nodetype].x = emb
+        elif feature == "ones":
             data_object[nodetype].x = torch.ones(store["num_nodes"],dim)
     return data_object
 
