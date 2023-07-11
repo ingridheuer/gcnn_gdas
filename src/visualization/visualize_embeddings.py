@@ -20,8 +20,12 @@ train_data, val_data = datasets
 model_args = viz_config["model"]
 model = training_utils.load_model(model_args["weights_path"], model_args["model_type"], model_args["supervision_types"], train_data.metadata())
 
-train_data = training_utils.initialize_features(train_data, model_args["feature_type"], model_args["feature_dim"])
-val_data = training_utils.initialize_features(train_data, model_args["feature_type"], model_args["feature_dim"])
+if model_args["feature_type"] != "lsa":
+    train_data = training_utils.initialize_features(train_data, model_args["feature_type"], model_args["feature_dim"])
+    val_data = training_utils.initialize_features(train_data, model_args["feature_type"], model_args["feature_dim"])
+else:
+    train_data = training_utils.initialize_features(train_data, model_args["feature_type"], model_args["feature_dim"],data_args["dataset_folder_path"])
+    val_data = training_utils.initialize_features(train_data, model_args["feature_type"], model_args["feature_dim"],data_args["dataset_folder_path"])
     
 encodings_dict = training_utils.get_encodings(model, train_data)
 tensor_df = pd.read_csv(data_args["tensor_df_path"],index_col=0).fillna(-2).astype({"comunidades_infomap":str, "comunidades_louvain":str})

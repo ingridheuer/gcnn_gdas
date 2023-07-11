@@ -202,22 +202,33 @@ def load_data(folder_path,load_test = False):
     
     return datasets, node_map
 
-def initialize_features(data,feature,dim,inplace=False):
-    feature_options = ["random","random_xavier","ones"]
+def initialize_features(data,feature,dim,feature_folder=None,inplace=False):
+    feature_options = ["random","random_xavier","ones","lsa"]
     assert feature in feature_options, f"{feature} is not a valid feature option, try one of {feature_options}"
     if inplace:
         data_object = data
     else:
         data_object = copy.copy(data)
-    for nodetype, store in data_object.node_items():
-        if feature == "random":
-            data_object[nodetype].x = torch.rand(store["num_nodes"],dim)
-        elif feature == "random_xavier":
-            emb = torch.nn.Parameter(torch.Tensor(store["num_nodes"], dim), requires_grad = False)
-            torch.nn.init.xavier_uniform_(emb)
-            data_object[nodetype].x = emb
-        elif feature == "ones":
-            data_object[nodetype].x = torch.ones(store["num_nodes"],dim)
+    if feature == "lsa":
+        assert feature_folder != None, "Missing lsa feature directory feature_folder"
+        feature_tensor = torch.load(feature_folder+"lsa_features.pt").to(torch.float)
+        for nodetype, store in data_object.node_items():
+            if nodetype == "disease":
+                data_object[nodetype].x = feature_tensor
+            else:
+                emb = torch.nn.Parameter(torch.Tensor(store["num_nodes"], dim), requires_grad = False)
+                torch.nn.init.xavier_uniform_(emb)
+    else:
+        for nodetype, store in data_object.node_items():
+            if feature == "random":
+                data_object[nodetype].x = torch.rand(store["num_nodes"],dim)
+            elif feature == "random_xavier":
+                emb = torch.nn.Parameter(torch.Tensor(store["num_nodes"], dim), requires_grad = False)
+                torch.nn.init.xavier_uniform_(emb)
+                data_object[nodetype].x = emb
+            elif feature == "ones":
+                data_object[nodetype].x = torch.ones(store["num_nodes"],dim)
+
     return data_object
 
 def save_model(model,folder_path,model_name):

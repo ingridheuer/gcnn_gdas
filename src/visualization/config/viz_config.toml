@@ -6,14 +6,14 @@ results_folder_path = "../../data/experiments/merged_types_experiment/"
 tensor_df_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_4/tensor_df.csv"
 
 [model]
-weights_path = "../../data/experiments/merged_types_experiment/sage_ones_first_negatives_exp_04_07_23__12_07.pth"
+weights_path = "../../data/experiments/merged_types_experiment/bootstrap_exp/sage_ones_new_ratio_11_07_23__15_46.pth"
 model_type = "sage_ones"
 supervision_types = ["gda"]
-feature_type = "ones"
+feature_type = "lsa"
 feature_dim = 10
 
 [misc]
-seed = 0
+seed = 4
 save_plot_data = true
-plot_title = "Negative sampling experiment"
-model_name = "negative_sampling_experiment"
+plot_title = "LSA_vector experiment"
+model_name = "LSA_vector_experiment"

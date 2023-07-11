@@ -13,7 +13,7 @@ dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split
 results_folder_path = "../../data/experiments/merged_types_experiment/bootstrap_exp/"
 
 [features]
-feature_type = "ones"
+feature_type = "lsa"
 feature_dim = 10
 
 [model]

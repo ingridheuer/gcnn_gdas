@@ -1,15 +1,12 @@
 #%%
 import torch
-import random
 import config
 import os
 import datetime
 import pickle
 import training_utils
 from torch_geometric import seed_everything
-from torch_geometric.loader import LinkNeighborLoader
 import sage_ones
-from sklearn.metrics import roc_auc_score, average_precision_score, accuracy_score
 
 seed = config.train_config["misc"]["seed"]
 seed_everything(seed)
@@ -31,9 +28,12 @@ full_dataset = torch.load(data_folder+"full_dataset.pt")
 feature_type = config.train_config["features"]["feature_type"]
 feature_dim = config.train_config["features"]["feature_dim"]
 
-if feature_type != "natural":
+if feature_type != "lsa":
     train_data = training_utils.initialize_features(train_data,feature_type,feature_dim)
     val_data = training_utils.initialize_features(val_data,feature_type,feature_dim)
+else: 
+    train_data = training_utils.initialize_features(train_data,feature_type,feature_dim,data_folder)
+    val_data = training_utils.initialize_features(val_data,feature_type,feature_dim,data_folder)
 
 # Initialize model
 # TODO: add "all types supervision"
@@ -48,7 +48,6 @@ else:
     print("Invalid model type")
 
 # Train model
-metric_map = {"roc_auc":roc_auc_score, "average_precision":average_precision_score, "accuracy":accuracy_score}
 
 def train_model(model,train_set,val_set,full_set,params,sample_epochs,sample_ratio,plot_title=f"Training {model_type}"):
     optimizer = torch.optim.Adam(model.parameters(), lr=params['lr'], weight_decay=params["weight_decay"])
@@ -57,7 +56,6 @@ def train_model(model,train_set,val_set,full_set,params,sample_epochs,sample_rat
     train_scores = []
     val_scores = []
 
-    metric = metric_map[params["metric"]]
     epochs = params["epochs"]
 
     early_stopper = training_utils.EarlyStopper(params["patience"],params["delta"])
