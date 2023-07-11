@@ -319,9 +319,6 @@ class base_model(torch.nn.Module):
     def forward(self,x:dict,edge_index:dict,edge_label_index:dict) -> dict:
         x = self.encoder(x,edge_index)
         prediction_dict = self.decoder(x,edge_label_index,self.supervision_types)
-
-        # if return_tensor:
-        #     pred = pred[self.supervision_types[0]]
         return prediction_dict
     
     def loss(self, prediction_dict, label_dict):
