@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from scipy import sparse
 
-seed = 4
+seed = 5
 
 data_folder = "../../data/processed/graph_data_nohubs/"
 split_folder = data_folder + f"/merged_types/split_dataset/seed_{seed}/"

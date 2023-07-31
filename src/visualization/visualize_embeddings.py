@@ -136,7 +136,7 @@ def plot_df(df, title, plot_components, colors):
 node_data_args = [tensor_df, encodings_dict]
 
 plot_pca(*node_data_args, "PCA. Color según grado GDA",
-            2, [0, 1], "degree_gda")
+            2, [0, 1], "comunidades_louvain")
 #%%
 plot_pca_3D(tensor_df,encodings_dict,"aver",3,[0,1,2],"degree_gda")
 # %%
@@ -145,12 +145,16 @@ plot_pca_3D(tensor_df,encodings_dict,"aver",3,[0,1,2],"degree_gda")
 tsne_df = get_tsne(*node_data_args, 2)
 umap_df = get_umap(*node_data_args,2)
 # %%
-plot_df(tsne_df, "aver", [0, 1], "node_type")
+plot_df(tsne_df, "aver", [0, 1], "comunidades_louvain")
 #%%
-plot_df(umap_df,"umap",[0,1],"comunidades_infomap")
+plot_df(umap_df,"umap",[0,1],"node_type")
 #%%
 pca_df = get_pca_df(tensor_df,encodings_dict,2)
 #%%
-communities = [0,-2]
-plot_df(pca_df[(pca_df.comunidades_infomap == "300.0")|(pca_df.comunidades_louvain == "-2.0")],"aver",[0,1],"comunidades_infomap")
+comu = 5
+plot_df(pca_df[(pca_df.comunidades_infomap == str(float(comu)))|(pca_df.comunidades_louvain == "-2.0")],"aver",[0,1],"comunidades_infomap")
+# %%
+comu = 0
+plot_df(umap_df[(umap_df.comunidades_infomap == str(float(comu)))|(umap_df.comunidades_infomap == "-2.0")],"aver",[0,1],"comunidades_infomap")
+
 # %%

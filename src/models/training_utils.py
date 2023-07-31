@@ -10,7 +10,6 @@ import sys
 import tqdm
 sys.path.append("..")
 
-
 def train(model, optimizer, data):
     model.train()
     optimizer.zero_grad()
@@ -179,6 +178,7 @@ def initialize_features(data,feature,dim,feature_folder=None,inplace=False):
             else:
                 emb = torch.nn.Parameter(torch.Tensor(store["num_nodes"], dim), requires_grad = False)
                 torch.nn.init.xavier_uniform_(emb)
+                data_object[nodetype].x = emb
     else:
         for nodetype, store in data_object.node_items():
             if feature == "random":
