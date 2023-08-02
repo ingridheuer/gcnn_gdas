@@ -241,7 +241,6 @@ class NegativeSampler:
 
         full_positive_index = full_dataset.edge_index_dict[edge_type]
         self.full_positive_hash = self.index_to_hash(full_positive_index)
-
         self.weights = [src_degrees,dst_degrees]
     
     def index_to_hash(self,edge_index):
@@ -308,6 +307,7 @@ class NegativeSampler:
 
         negative_edge_hash = torch.concat(true_negatives)
         negative_edge_index = self.hash_to_index(negative_edge_hash)
+        negative_edge_index
 
         return negative_edge_index
     
