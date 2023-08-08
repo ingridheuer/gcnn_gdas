@@ -147,7 +147,9 @@ def launch_experiment(model,train_set,val_set,params,plot_title="title"):
     plot_training_stats(plot_title, *curve_data,"AUC")
     return model, val_auc
 
-def load_data(folder_path,load_test = False):
+def load_data(folder_path,load_inverted_map=True,load_test = False):
+    """If load_inverted_map=True, loads map from tensor_index to node_index. 
+    if False, loads map from node_index to tensor_index """
     if load_test:
         names = ["train","validation","test"]
     else:
@@ -159,6 +161,12 @@ def load_data(folder_path,load_test = False):
     
     with open(folder_path+"node_map.pickle", 'rb') as handle:
         node_map = pickle.load(handle)
+    
+    if load_inverted_map:
+        rev_map = {}
+        for node_type, map in node_map.items():
+            rev_map[node_type] = {v:k for k,v in map.items()}
+        node_map = rev_map
     
     return datasets, node_map
 
