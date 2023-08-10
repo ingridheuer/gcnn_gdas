@@ -171,22 +171,33 @@ def load_data(folder_path,load_inverted_map=True,load_test = False):
     return datasets, node_map
 
 def initialize_features(data,feature,dim,feature_folder=None,inplace=False):
-    feature_options = ["random","random_xavier","ones","lsa"]
+    feature_options = ["random","random_xavier","ones","lsa","lsa_scaled","lsa_norm","gtex_norm","gtex_scaled"]
     assert feature in feature_options, f"{feature} is not a valid feature option, try one of {feature_options}"
     if inplace:
         data_object = data
     else:
         data_object = copy.copy(data)
-    if feature == "lsa":
-        assert feature_folder != None, "Missing lsa feature directory feature_folder"
-        feature_tensor = torch.load(feature_folder+"lsa_features.pt").to(torch.float)
-        for nodetype, store in data_object.node_items():
-            if nodetype == "disease":
-                data_object[nodetype].x = feature_tensor
-            else:
-                emb = torch.nn.Parameter(torch.Tensor(store["num_nodes"], dim), requires_grad = False)
-                torch.nn.init.xavier_uniform_(emb)
-                data_object[nodetype].x = emb
+
+    if feature in ["lsa","lsa_norm","lsa_scaled","gtex_norm","gtex_scaled"]:
+        assert feature_folder != None, "Missing feature directory feature_folder"
+        if feature in ["gtex_norm","gtex_scaled"]:
+            disease_tensor = torch.load(feature_folder+"lsa_features.pt").to(torch.float)
+            gene_tensor = torch.load(feature_folder+feature+"_features.pt").to(torch.float)
+            data_object["disease"].x = disease_tensor
+            data_object["gene_protein"].x = gene_tensor
+
+            emb = torch.nn.Parameter(torch.Tensor(data_object["pathway"]["num_nodes"], dim), requires_grad = False)
+            torch.nn.init.xavier_uniform_(emb)
+            data_object["pathway"].x = emb
+        else:
+            feature_tensor = torch.load(f"{feature_folder}{feature}_features.pt").to(torch.float)
+            for nodetype, store in data_object.node_items():
+                if nodetype == "disease":
+                    data_object[nodetype].x = feature_tensor
+                else:
+                    emb = torch.nn.Parameter(torch.Tensor(store["num_nodes"], dim), requires_grad = False)
+                    torch.nn.init.xavier_uniform_(emb)
+                    data_object[nodetype].x = emb
     else:
         for nodetype, store in data_object.node_items():
             if feature == "random":
