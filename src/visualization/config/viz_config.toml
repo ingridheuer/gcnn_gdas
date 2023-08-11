@@ -1,19 +1,19 @@
 # visualization settings
 
 [data]
-dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_4/"
+dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_0/"
 results_folder_path = "../../data/experiments/merged_types_experiment/"
-tensor_df_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_4/tensor_df.csv"
+tensor_df_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_0/tensor_df.csv"
 
 [model]
-weights_path = "../../data/experiments/merged_types_experiment/bootstrap_exp/sage_ones_new_ratio_11_07_23__15_46.pth"
-model_type = "sage_ones"
+weights_path = "../../data/experiments/design_space_experiment/experiment_32_18_04_23__.pth"
+model_type = "base_model"
 supervision_types = ["gda"]
-feature_type = "lsa"
+feature_type = "ones"
 feature_dim = 10
 
 [misc]
-seed = 4
+seed = 0
 save_plot_data = true
-plot_title = "LSA_vector experiment"
-model_name = "LSA_vector_experiment"
+plot_title = "Sage ones sin deg 0.75"
+model_name = "sage_ones_sin_negsampling"
