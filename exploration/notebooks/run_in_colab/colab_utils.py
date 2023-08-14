@@ -95,6 +95,26 @@ def plot_training_stats(title, train_losses,val_losses, train_metric,val_metric,
   plt.legend(handles=[p1, p2, p3,p4],loc=2)
   plt.show()
 
+def plot_training_stats_sep(title, train_losses,val_losses, train_metric,val_metric):
+
+  fig, ax = plt.subplots(nrows=2,ncols=1,figsize = (8,6))
+  ax1, ax2 = ax
+  ax2.set_xlabel("Training Epochs")
+  ax1.set_ylabel("AUROC")
+  ax2.set_ylabel("Loss")
+  ax1.grid()
+  ax2.grid()
+
+  p1, = ax1.plot(train_metric, "b-", label="Train AUROC")
+  p2, = ax1.plot(val_metric, "r-", label=f"Validation AUROC")
+  p3, = ax2.plot(train_losses, "b-", label=f"Train loss")
+  p4, = ax2.plot(val_losses,"r-",label=f"Validation loss")
+  ax1.legend(handles=[p1,p2],loc=2)
+  ax2.legend(handles=[p3,p4],loc=2)
+  fig.suptitle(title)
+  fig.tight_layout()
+  plt.show()
+
 class EarlyStopper:
     def __init__(self, patience=1, min_delta=0):
         self.patience = patience
