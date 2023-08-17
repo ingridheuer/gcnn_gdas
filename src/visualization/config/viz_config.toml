@@ -2,12 +2,12 @@
 
 [data]
 dataset_folder_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_0/"
-results_folder_path = "../../data/experiments/merged_types_experiment/"
+results_folder_path = "../../data/experiments/design_space_experiment/"
 tensor_df_path = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/seed_0/tensor_df.csv"
 
 [model]
-weights_path = "../../data/experiments/design_space_experiment/experiment_32_18_04_23__.pth"
-model_type = "base_model"
+weights_path = "../../data/experiments/merged_types_experiment/sage_ones_merged_experiment_13_06_23__15_59.pth"
+model_type = "sage_ones"
 supervision_types = ["gda"]
 feature_type = "ones"
 feature_dim = 10

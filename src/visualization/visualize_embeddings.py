@@ -3,7 +3,7 @@ import sys
 sys.path.append("..")
 
 from config import viz_config
-from models import training_utils
+from models import training_utils,  base_model
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -11,13 +11,24 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from sklearn.manifold import TSNE
 from umap import UMAP
+import torch
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # %%
 # Load data
 data_args = viz_config["data"]
+model_args = viz_config["model"]
+# experiment_results = pd.read_parquet(data_args["results_folder_path"]+"experiment_18_04_23.parquet")
 datasets, _ = training_utils.load_data(data_args["dataset_folder_path"])
 train_data, val_data = datasets
+#%%
+# model_params = experiment_results.drop(columns=["auc","delta","activation","curve_data"]).loc[34].to_dict()
+# model_params = model_params|{"conv_type":"SAGEConv"}
 
-model_args = viz_config["model"]
+# model = base_model.base_model(model_params,train_data.metadata(),[("gene_protein","gda","disease")])
+# weights = torch.load(model_args["weights_path"],map_location=device)
+# model.load_state_dict(weights)
+#%%
 model = training_utils.load_model(model_args["weights_path"], model_args["model_type"], model_args["supervision_types"], train_data.metadata())
 
 if model_args["feature_type"] != "lsa":
@@ -47,7 +58,7 @@ def plot_pca(tensor_df, encodings_dict, title, n_components, plot_components, co
         df[["degree_gda", "degree_pp", "degree_dd", "total_degree"]])
 
     fig = px.scatter(df, x=plot_components[0], y=plot_components[1],
-                     color=color, title=title, hover_name="node_name")
+                     color=color, title=title, hover_name="node_name",width=800,height=500, labels = {"degree_gda":"Log(k)"})
 
     fig.show()
 
@@ -130,24 +141,24 @@ def get_umap(tensor_df, encodings_dict, n_components):
 
 def plot_df(df, title, plot_components, colors):
     fig = px.scatter(df, x=plot_components[0], y=plot_components[1],
-                     color=colors, title=title, hover_name="node_name")
+                     color=colors, title=title, hover_name="node_name",width=400,height=800)
     fig.show()
 # %%
 node_data_args = [tensor_df, encodings_dict]
 
-plot_pca(*node_data_args, "PCA. Color según grado GDA",
-            2, [0, 1], "comunidades_louvain")
+plot_pca(*node_data_args, "PCA. Color según grado (k) GDA",
+            2, [0, 1], "degree_gda")
 #%%
-plot_pca_3D(tensor_df,encodings_dict,"aver",3,[0,1,2],"degree_gda")
+# plot_pca_3D(tensor_df,encodings_dict,"aver",3,[0,1,2],"degree_gda")
 # %%
 # plot_tsne(*node_data_args, "TSNE", 2, [0, 1], "degree_gda")
 # %%
 tsne_df = get_tsne(*node_data_args, 2)
 umap_df = get_umap(*node_data_args,2)
 # %%
-plot_df(tsne_df, "aver", [0, 1], "comunidades_louvain")
+plot_df(tsne_df, "TSNE. Color según grado GDA", [0, 1], "degree_gda")
 #%%
-plot_df(umap_df,"umap",[0,1],"node_type")
+plot_df(umap_df,"UMAP. Color según grado GDA",[0,1],"degree_gda")
 #%%
 pca_df = get_pca_df(tensor_df,encodings_dict,2)
 #%%
