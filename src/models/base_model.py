@@ -95,7 +95,7 @@ class hetero_MLP(torch.nn.Module):
 
 # ----------------  Message-passing layers
 class HeteroJumpingKnowledge(torch.nn.Module):
-    """Currently only supporting "max" mode"""
+    """Currently only supports "max" mode"""
     def __init__(self,metadata):
         super().__init__()
         self.node_types = metadata[0]
@@ -151,7 +151,7 @@ class base_message_layer(torch.nn.Module):
             out = self.post_conv(out)
             if self.skip == "skipsum" and not self.is_input_layer:
                 out += identity
-
+                # out = torch.nn.functional.leaky_relu(out)
         if self.normalize:
             out = torch.nn.functional.normalize(out,2,-1)
         return out
