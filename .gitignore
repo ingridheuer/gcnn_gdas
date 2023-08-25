@@ -256,3 +256,13 @@ exploration/notebooks/run_in_colab/base_model.py
 exploration/notebooks/run_in_colab/training_utils.py
 exploration/notebooks/run_in_colab/training_utils .py
 exploration/notebooks/run_in_colab/sage_lsa.py
+models/final_model/seeds/final_model_4_curve.npy
+models/final_model/seeds/final_model_4.pth
+models/final_model/seeds/final_model_5_curve.npy
+models/final_model/seeds/final_model_5.pth
+models/final_model/seeds/final_model_6_curve.npy
+models/final_model/seeds/final_model_6.pth
+models/final_model/seeds/final_model_7_curve.npy
+models/final_model/seeds/final_model_7.pth
+models/final_model/seeds/final_model_8_curve.npy
+models/final_model/seeds/final_model_8.pth

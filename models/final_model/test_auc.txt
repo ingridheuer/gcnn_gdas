@@ -1,0 +1,1 @@
+mean test AUROC:0.905 +- 0.002. /n Num seeds: 5
