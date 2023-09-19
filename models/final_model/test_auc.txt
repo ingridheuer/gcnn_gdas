@@ -1,1 +1,3 @@
-mean test AUROC:0.905 +- 0.002. /n Num seeds: 5
+mean test AUROC:0.906 +- 0.001. 
+ Num seeds: 5 
+ AUCs: [0.907, 0.907, 0.904, 0.907, 0.904]

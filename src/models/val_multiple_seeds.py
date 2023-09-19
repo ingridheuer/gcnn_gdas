@@ -3,10 +3,9 @@ import torch
 import numpy as np
 import pandas as pd
 from torch_geometric import seed_everything
-import final_model, training_utils
-import pickle
 import final_model, training_utils, prediction_utils
 from sklearn.metrics import roc_auc_score, accuracy_score, average_precision_score, precision_score, recall_score
+import pickle
 seed_everything(0)
 #%%
 data_folder = "../../data/processed/graph_data_nohubs/merged_types/split_dataset/"
@@ -19,37 +18,37 @@ node_df = pd.read_csv(data_folder+f"seed_{seeds[-1]}/tensor_df.csv",index_col=0)
 #load data
 data = []
 for seed in seeds:
-    datasets, node_map = training_utils.load_data(data_folder+f"seed_{seed}/",load_test=True)
+    datasets, node_map = training_utils.load_data(data_folder+f"seed_{seed}/",load_test=False)
     data.append(datasets)
 
 with open(f"{models_folder}training_parameters.pickle", 'rb') as handle:
     params = pickle.load(handle)
 
 #initialize features in test data
-test_data = []
+val_data = []
 for dataset in data:
-    test_set = dataset[2]
-    test_data.append(training_utils.initialize_features(test_set,params["feature_type"],params["feature_dim"],feature_folder))
+    val_set = dataset[1]
+    val_data.append(training_utils.initialize_features(val_set,params["feature_type"],params["feature_dim"],feature_folder))
 
 #load models
 models = []
 for seed in seeds:
     weights_path = models_folder+f"seeds/final_model_{seed}.pth"
     weights = torch.load(weights_path)
-    model = final_model.Model(test_data[-1].metadata(),[("gene_protein","gda","disease")])
+    model = final_model.Model(val_data[-1].metadata(),[("gene_protein","gda","disease")])
     model.load_state_dict(weights)
     models.append(model)
 #%%
 #test models
 # aucs = []
-# for model,test_dataset in zip(models,test_data):
+# for model,test_dataset in zip(models,val_data):
 #     auc = training_utils.test(model,test_dataset)
 #     aucs.append(auc)
 
-# test_auc, test_std = np.mean(aucs), np.std(aucs)
+# val_auc, val_std = np.mean(aucs), np.std(aucs)
 
-# with open(f'{models_folder}test_auc.txt', 'w') as f:
-#     f.write(f"mean test AUROC:{round(test_auc,3)} +- {round(test_std,3)}. \n Num seeds: {len(data)} \n AUCs: {aucs}")
+# with open(f'{models_folder}validation_auc.txt', 'w') as f:
+#     f.write(f"mean test AUROC:{round(val_auc,3)} +- {round(val_std,3)}. \n Num seeds: {len(data)} \n AUCs: {aucs}")
 #%%
 def full_eval(data,node_df):
     encodings_dict = training_utils.get_encodings(model,data)
@@ -70,7 +69,7 @@ def full_eval(data,node_df):
 
 # mean AUROC:0.899 +- 0.002. /n Num seeds: 5
 all_results = []
-for seed in test_data:
+for seed in val_data:
     eval_results = full_eval(seed,node_df)
     all_results.append(eval_results)
 #%%
@@ -78,4 +77,4 @@ all_results_df = pd.DataFrame(all_results)
 all_results_df.loc['mean'] = all_results_df.mean()
 all_results_df.loc["std"] = all_results_df.std()
 #%%
-all_results_df.to_csv(f"{models_folder}test_eval.csv")
+all_results_df.to_csv(f"{models_folder}validation_eval.csv")
