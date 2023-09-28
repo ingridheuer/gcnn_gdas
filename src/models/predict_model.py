@@ -85,4 +85,4 @@ full_gene_df.to_csv("../../reports/model_predictions/top_50_diseases.csv")
 disease_pred = pd.read_csv("../../reports/model_predictions/disease_predictions.csv",index_col=0)
 disease_pred["node_index"] = diseases
 disease_pred = disease_pred.set_index("node_index",drop=True)
-full_gene_df.to_csv("../../reports/model_predictions/top_50_genes.csv")
+disease_pred.to_csv("../../reports/model_predictions/top_50_genes.csv")
