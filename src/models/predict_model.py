@@ -41,48 +41,38 @@ diseases = node_df[node_df.node_type == "disease"].index.values
 genes = node_df[node_df.node_type == "gene_protein"].index.values
 #%%
 num_pred = 50
-# saco los enlaces que ya existían en el grafo
+# saco los enlaces que ya existían en el grafo (básicamente remover todo disgenet)
 remove_edges = mapped_df[(mapped_df.edge_type == "message_passing")| (mapped_df.label == 1)][["gene_protein","disease"]]
-
+#%%
 #diseases
+num_pred = 50
 disease_rankings = []
 for disease in tqdm(diseases):
-    pred = predictor.prioritize_one_vs_all(disease)
     if disease in remove_edges.disease.values:
-        to_remove = np.array(mapped_dataset.dataframe.set_index("disease").loc[disease].gene_protein)
-        pred = pred[~pred.node_index.apply(lambda x: x in to_remove)].reset_index(drop=True)
+        to_remove = remove_edges[remove_edges.disease == disease].gene_protein.values
+        targets = node_df[node_df.node_type == "gene_protein"].drop(to_remove).index.values
+        ranked_index, ranked_scores = predictor.prioritize_one_vs_all(disease,targets)
+    else:
+        ranked_index, ranked_scores = predictor.prioritize_one_vs_all(disease)
 
-    disease_rankings.append(pred.node_index.values[:num_pred])
-
-disease_predictions = pd.DataFrame(disease_rankings)
+    disease_rankings.append(ranked_index[:num_pred].numpy())
+                    
+disease_predictions = pd.DataFrame(disease_rankings,index=diseases)
 disease_predictions.to_csv("../../reports/model_predictions/disease_predictions.csv")
 #%%
 #genes
-gene_lists = [genes[:5915],genes[5915:11830],genes[11830:]]
+num_pred = 50
+gene_rankings = []
+for gene in tqdm(genes):
+    if gene in remove_edges.gene_protein.values:
+        to_remove = remove_edges[remove_edges.gene_protein == gene].disease.values
+        targets = node_df[node_df.node_type == "disease"].drop(to_remove).index.values
+        ranked_index, ranked_scores = predictor.prioritize_one_vs_all(gene,targets)
+    else:
+        ranked_index, ranked_scores = predictor.prioritize_one_vs_all(gene)
 
-for i,subset in enumerate(gene_lists):
-    gene_rankings = []
-    for gene in tqdm(subset):
-        pred = predictor.prioritize_one_vs_all(gene)
-        if gene in remove_edges.gene_protein.values:
-            to_remove = np.array(mapped_dataset.dataframe.set_index("gene_protein").loc[gene].disease)
-            pred = pred[~pred.node_index.apply(lambda x: x in to_remove)].reset_index(drop=True)
-
-        gene_rankings.append(pred.node_index.values[:num_pred])
-
-    gene_predictions = pd.DataFrame(gene_rankings)
-    gene_predictions.to_csv(f"../../reports/model_predictions/gene_predictions_{i}.csv")
-# %%
-dfs = []
-for i in range(3):
-    dfs.append(pd.read_csv(f"../../reports/model_predictions/gene_predictions_{i}.csv",index_col=0))
-
-full_gene_df = pd.concat(dfs)
-full_gene_df["node_index"] = genes
-full_gene_df = full_gene_df.set_index("node_index",drop=True)
-full_gene_df.to_csv("../../reports/model_predictions/top_50_diseases.csv")
+    gene_rankings.append(ranked_index[:num_pred].numpy())
+                    
+gene_predictions = pd.DataFrame(gene_rankings,index=genes)
+gene_predictions.to_csv("../../reports/model_predictions/gene_predictions.csv")
 #%%
-disease_pred = pd.read_csv("../../reports/model_predictions/disease_predictions.csv",index_col=0)
-disease_pred["node_index"] = diseases
-disease_pred = disease_pred.set_index("node_index",drop=True)
-disease_pred.to_csv("../../reports/model_predictions/top_50_genes.csv")

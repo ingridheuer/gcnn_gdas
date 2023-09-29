@@ -69,8 +69,9 @@ class Predictor():
 
         self.df = node_df
         self.encodings = encodings_dict
-        gene_index = torch.tensor(self.df[node_df.node_type == "gene_protein"]["tensor_index"].index.values)
-        disease_index = torch.tensor(self.df[node_df.node_type == "disease"]["tensor_index"].index.values)
+        # self.tensor_map = {"disease":self.df[self.df.node_type == "disease"].tensor_index.to_dict(), "gene_protein":self.df[self.df.node_type == "gene_protein"].tensor_index.to_dict()}
+        gene_index = torch.tensor(self.df[self.df.node_type == "gene_protein"]["tensor_index"].index.values)
+        disease_index = torch.tensor(self.df[self.df.node_type == "disease"]["tensor_index"].index.values)
         self.node_index_dict = {"gene_protein":gene_index,"disease":disease_index}
     
     def inner_product_decoder(self,x_source,x_target,apply_sigmoid=True):
@@ -81,10 +82,10 @@ class Predictor():
 
         return pred
     
-    def prioritize_one_vs_all(self,node_index,return_df=True):
+    def prioritize_one_vs_all(self,node_index,target_index=None,return_df=False):
         source_type = self.df.loc[node_index,"node_type"]
         tensor_index = self.df.loc[node_index,"tensor_index"]
-
+        
         if source_type == "disease":
             target_type = "gene_protein"
 
@@ -92,15 +93,22 @@ class Predictor():
             target_type = "disease"
 
         source_vector = self.encodings[source_type][tensor_index]
-        target_matrix = self.encodings[target_type]
-
-        predicted_edges = self.inner_product_decoder(source_vector,target_matrix)
-        ranked_scores, ranked_indices = torch.sort(predicted_edges,descending=True)
-        ranked_node_index = self.node_index_dict[target_type][ranked_indices]
-
         
+        if target_index is None:
+            target_matrix = self.encodings[target_type]
+            predicted_edges = self.inner_product_decoder(source_vector,target_matrix)
+            ranked_scores, ranked_indices = torch.sort(predicted_edges,descending=True)
+            ranked_node_index = self.node_index_dict[target_type][ranked_indices]
+        else:
+            assert all(self.df.loc[target_index,"node_type"].values == target_type), f"Los indices target no corresponden a nodos del tipo {target_type}"
+            target_tensor_index = self.df.loc[target_index,"tensor_index"].values
+            target_matrix = self.encodings[target_type][target_tensor_index]
+            predicted_edges = self.inner_product_decoder(source_vector,target_matrix)
+            ranked_scores, ranked_indices = torch.sort(predicted_edges,descending=True)
+            ranked_node_index = self.node_index_dict[target_type][target_tensor_index[ranked_indices]]
+
         if return_df:
-            results = pd.DataFrame({"score":ranked_scores,"tensor_index":ranked_indices,"node_index":ranked_node_index})
+            results = pd.DataFrame({"score":ranked_scores,"node_index":ranked_node_index})
             node_names = self.df[self.df.node_type == target_type]["node_name"]
             ranked_predictions = pd.merge(results,node_names,left_on="node_index",right_index=True)
             ranked_predictions.index.name = "rank"
