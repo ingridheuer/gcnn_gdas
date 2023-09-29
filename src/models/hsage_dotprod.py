@@ -1,3 +1,4 @@
+# Esto es la resolución de un ejercicio del curso CS224W: Machine Learning with Graphs de Jure Leskovec, Stanford University
 # Implementación de un hetero graphSAGE o Relational GraphSAGE + un decoder distmult al estilo Schlichtkrull et. al
 # Sin mecanismos de atención
 # Mean aggregation only

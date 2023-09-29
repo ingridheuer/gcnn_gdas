@@ -69,6 +69,9 @@ class Predictor():
 
         self.df = node_df
         self.encodings = encodings_dict
+        gene_index = torch.tensor(self.df[node_df.node_type == "gene_protein"]["tensor_index"].index.values)
+        disease_index = torch.tensor(self.df[node_df.node_type == "disease"]["tensor_index"].index.values)
+        self.node_index_dict = {"gene_protein":gene_index,"disease":disease_index}
     
     def inner_product_decoder(self,x_source,x_target,apply_sigmoid=True):
         pred = (x_source * x_target).sum(dim=1)
@@ -78,7 +81,7 @@ class Predictor():
 
         return pred
     
-    def prioritize_one_vs_all(self,node_index):
+    def prioritize_one_vs_all(self,node_index,return_df=True):
         source_type = self.df.loc[node_index,"node_type"]
         tensor_index = self.df.loc[node_index,"tensor_index"]
 
@@ -93,13 +96,18 @@ class Predictor():
 
         predicted_edges = self.inner_product_decoder(source_vector,target_matrix)
         ranked_scores, ranked_indices = torch.sort(predicted_edges,descending=True)
-        results = pd.DataFrame({"score":ranked_scores.cpu().numpy(),"tensor_index":ranked_indices.cpu().numpy()})
-        results.score = results.score.round(3)
+        ranked_node_index = self.node_index_dict[target_type][ranked_indices]
 
-        index_map = self.df.loc[self.df.node_type == target_type,["tensor_index","node_name"]].reset_index()
-        ranked_predictions = pd.merge(results,index_map,on="tensor_index")
-        ranked_predictions.index.name = "rank"
+        
+        if return_df:
+            results = pd.DataFrame({"score":ranked_scores,"tensor_index":ranked_indices,"node_index":ranked_node_index})
+            node_names = self.df[self.df.node_type == target_type]["node_name"]
+            ranked_predictions = pd.merge(results,node_names,left_on="node_index",right_index=True)
+            ranked_predictions.index.name = "rank"
 
+        else:
+            ranked_predictions = [ranked_node_index,ranked_scores]
+            
         return ranked_predictions
     
     def predict_supervision_edges(self,data, edge_type, return_dataframe=True):
