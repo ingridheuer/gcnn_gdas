@@ -21,10 +21,10 @@ class MappedDataset():
         mapped_src = [src_map[n] for n in sources]
         mapped_trg = [dst_map[n] for n in targets]
 
-        return {src_type:mapped_src, dst_type:mapped_trg, f"torch_{src_type}_index":sources, f"torch_{dst_type}_index":targets}
+        return {f"{src_type}_source":mapped_src, f"{dst_type}_target":mapped_trg, f"torch_{src_type}_index_source":sources, f"torch_{dst_type}_index_target":targets}
 
     def _reverse_map_heterodata(self,data):
-        """Maps full edge data from pyg Heterodata back into the original node indexes from the dataframe"""
+        """Maps full edge data from pyg Heterodata back into the original node indices from the dataframe"""
         edge_dict = {}
         for edge_type in data.edge_types:
             type_dict = {}
@@ -57,7 +57,6 @@ class MappedDataset():
         msg_passing_edges["edge_type"] = "message_passing"
         labeled_edges["edge_type"] = "supervision"
 
-
         edges_df.append(labeled_edges)
         edges_df.append(msg_passing_edges)
         total_df = pd.concat(edges_df,axis=0)
@@ -82,7 +81,8 @@ class Predictor():
 
         return pred
     
-    def prioritize_one_vs_all(self,node_index,target_index=None,return_df=False):
+    def prioritize_one_vs_all(self,node_index,target_index=None,return_df=False,apply_sigmoid=True):
+        """Index: node_index"""
         source_type = self.df.loc[node_index,"node_type"]
         tensor_index = self.df.loc[node_index,"tensor_index"]
         
@@ -96,14 +96,14 @@ class Predictor():
         
         if target_index is None:
             target_matrix = self.encodings[target_type]
-            predicted_edges = self.inner_product_decoder(source_vector,target_matrix)
+            predicted_edges = self.inner_product_decoder(source_vector,target_matrix,apply_sigmoid)
             ranked_scores, ranked_indices = torch.sort(predicted_edges,descending=True)
             ranked_node_index = self.node_index_dict[target_type][ranked_indices]
         else:
             assert all(self.df.loc[target_index,"node_type"].values == target_type), f"Los indices target no corresponden a nodos del tipo {target_type}"
             target_tensor_index = self.df.loc[target_index,"tensor_index"].values
             target_matrix = self.encodings[target_type][target_tensor_index]
-            predicted_edges = self.inner_product_decoder(source_vector,target_matrix)
+            predicted_edges = self.inner_product_decoder(source_vector,target_matrix,apply_sigmoid)
             ranked_scores, ranked_indices = torch.sort(predicted_edges,descending=True)
             ranked_node_index = self.node_index_dict[target_type][target_tensor_index[ranked_indices]]
 
