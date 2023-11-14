@@ -174,11 +174,11 @@ plot_pca_3D(node_df,encodings_dict,"aver",3,[0,1,2],"node_type")
 # %%
 # plot_tsne(*node_data_args, "TSNE", 2, [0, 1], "degree_gda")
 # %%
-tsne_df = get_tsne(node_df,encodings_dict, 2)
-umap_df = get_umap(node_df,encodings_dict,2)
-pca_df = get_pca_df(node_df,encodings_dict,2)
+tsne_df = get_tsne(node_df.reset_index(),encodings_dict, 2)
+umap_df = get_umap(node_df.reset_index(),encodings_dict,2)
+pca_df = get_pca_df(node_df.reset_index(),encodings_dict,2)
 # %%
-plot_df(tsne_df, "TSNE. Color según grado tipo de nodo", [0, 1], "degree_gda")
+plot_df(tsne_df, "TSNE. Color según grado tipo de nodo", [0, 1], "node_type")
 #%%
 plot_df(umap_df,"UMAP. Color según grado GDA",[0,1],"node_type")
 #%%
@@ -191,3 +191,7 @@ plot_df(umap_df[(umap_df.comunidades_infomap == str(float(comu)))|(umap_df.comun
 # %%
 comu = 700
 plot_df(tsne_df[(tsne_df.comunidades_infomap == str(float(comu)))|(tsne_df.comunidades_infomap == "-2.0")],"aver",[0,1],"comunidades_infomap")
+#%%
+plot_df(pca_df,"avor",[0,1],"degree_gda")
+# %%
+plot_pca_3D(node_df.reset_index(),encodings_dict,"aver",3,[0,1,2],"degree_gda")
