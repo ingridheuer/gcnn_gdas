@@ -1,5 +1,5 @@
 # %%
-# from config import viz_config
+from config import viz_config
 import pandas as pd
 import numpy as np
 import pickle
@@ -18,8 +18,8 @@ from models import training_utils,  base_model, final_model
 seed = 4
 seed_everything(seed)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-# %%
-# Load data
+#%%
+#Load data
 # data_args = viz_config["data"]
 # model_args = viz_config["model"]
 # experiment_results = pd.read_parquet(data_args["results_folder_path"]+"experiment_18_04_23.parquet")
@@ -82,7 +82,7 @@ def plot_pca(tensor_df, encodings_dict, title, n_components, plot_components, co
         df[["degree_gda", "degree_pp", "degree_dd", "total_degree"]])
 
     fig = px.scatter(df, x=plot_components[0], y=plot_components[1],
-                     color=color, title=title, hover_name="node_name",width=800,height=500, labels = {"degree_gda":"Log(k)"})
+                     color=color, title=title, hover_name="node_name",width=800,height=500, labels = {"degree_gda":"Log(k)"}, opacity=0.3)
 
     fig.show()
 
@@ -140,8 +140,8 @@ def get_tsne(tensor_df, encodings_dict, n_components):
     proj_df = pd.DataFrame(proj)
 
     df = pd.merge(proj_df, tensor_df, left_index=True, right_index=True)
-    df[["degree_gda", "degree_pp", "degree_dd", "total_degree"]] = np.log(
-        df[["degree_gda", "degree_pp", "degree_dd", "total_degree"]])
+    # df[["degree_gda", "degree_pp", "degree_dd", "total_degree"]] = np.log(
+    #     df[["degree_gda", "degree_pp", "degree_dd", "total_degree"]] + 1)
 
     return df
 
@@ -163,24 +163,24 @@ def get_umap(tensor_df, encodings_dict, n_components):
 
     return df
 
-def plot_df(df, title, plot_components, colors):
+def plot_df(df, title, plot_components, colors,alpha):
     fig = px.scatter(df, x=plot_components[0], y=plot_components[1],
-                     color=colors, title=title, hover_name="node_name")
+                     color=colors, title=title, hover_name="node_name",opacity=alpha)
     fig.show()
 # %%
-plot_pca(node_df,encodings_dict, "PCA. Color según tipo de nodo",2, [0, 1], "degree_gda")
+plot_pca(node_df,encodings_dict, "PCA. Color según tipo de nodo",2, [0, 1], "node_type")
 #%%
-plot_pca_3D(node_df,encodings_dict,"aver",3,[0,1,2],"node_type")
+plot_pca_3D(node_df.reset_index(),encodings_dict,"PCA - color según grado GDA",3,[0,1,2],"degree_gda")
 # %%
 # plot_tsne(*node_data_args, "TSNE", 2, [0, 1], "degree_gda")
 # %%
 tsne_df = get_tsne(node_df.reset_index(),encodings_dict, 2)
-umap_df = get_umap(node_df.reset_index(),encodings_dict,2)
-pca_df = get_pca_df(node_df.reset_index(),encodings_dict,2)
+# umap_df = get_umap(node_df.reset_index(),encodings_dict,2)
+# pca_df = get_pca_df(node_df.reset_index(),encodings_dict,2)
 # %%
-plot_df(tsne_df, "TSNE. Color según grado tipo de nodo", [0, 1], "node_type")
+plot_df(tsne_df, "TSNE. Color según grado GDA", [0, 1], "degree_gda",alpha=0.3)
 #%%
-plot_df(umap_df,"UMAP. Color según grado GDA",[0,1],"node_type")
+# plot_df(umap_df,"UMAP. Color según grado GDA",[0,1],"degree_gda",alpha=0.3)
 #%%
 comu = 70
 plot_df(pca_df[(pca_df.comunidades_infomap == str(float(comu)))|(pca_df.comunidades_louvain == "-2.0")],"aver",[0,1],"comunidades_infomap")
@@ -189,9 +189,21 @@ comu = 150
 plot_df(umap_df[(umap_df.comunidades_infomap == str(float(comu)))|(umap_df.comunidades_infomap == "-2.0")],"aver",[0,1],"comunidades_infomap")
 
 # %%
-comu = 700
-plot_df(tsne_df[(tsne_df.comunidades_infomap == str(float(comu)))|(tsne_df.comunidades_infomap == "-2.0")],"aver",[0,1],"comunidades_infomap")
+tsne_plot_df = tsne_df.copy()
+tsne_plot_df[["degree_gda", "degree_pp", "degree_dd", "total_degree"]] = np.log(tsne_df[["degree_gda", "degree_pp", "degree_dd", "total_degree"]] + 1)
+
+
+plot_df(tsne_plot_df, "TSNE - Color según grado total", [0,1], "total_degree", alpha=0.3)
 #%%
-plot_df(pca_df,"avor",[0,1],"degree_gda")
+comu = 523
+comu_df = tsne_plot_df.copy()
+comu_df["comu"] = tsne_plot_df.comunidades_infomap.apply(lambda x: x == str(float(comu)))
+# comu_df["comu"] = tsne_plot_df.comunidades_louvain.apply(lambda x: x == str(float(comu)))
+# plot_df(tsne_df[(tsne_df.comunidades_infomap == str(float(comu)))|(tsne_df.comunidades_infomap == "-2.0")],f"TSNE - Comunidad {comu}",[0,1],"comunidades_infomap",alpha=0.5)
+
+
+plot_df(comu_df,f"TSNE - Comunidad {comu}",[0,1],"comu",alpha=0.5)
+#%%
+# plot_df(pca_df,"avor",[0,1],"degree_gda",0.3)
 # %%
-plot_pca_3D(node_df.reset_index(),encodings_dict,"aver",3,[0,1,2],"degree_gda")
+# plot_pca_3D(node_df.reset_index(),encodings_dict,"aver",3,[0,1,2],"degree_gda")
