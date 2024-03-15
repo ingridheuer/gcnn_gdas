@@ -63,6 +63,13 @@ class MappedDataset():
         return total_df
 
 class Predictor():
+    """
+    Utilidad para hacer predicciones rápidas una vez que ya tenemos los encodings calculados.
+    Calcula la probabilidad de enlaces con inner_product_decoder, que es una similaridad producto interno más una logística.
+    Se encarga de mapear los indices del grafo ("node_index") a los índices tensoriales que usan los datos de torch.
+    Esto es para evitar ambiguedades ya que los indices tensoriales no son únicos (hay una enfermedad 0 y un gen 0), 
+    mientras que los "node_index" sí son únicos.
+    """
     def __init__(self,node_df, encodings_dict):
         assert node_df.index.name == "node_index", f"df index must be node_index, not {node_df.index.name}."
 
@@ -82,7 +89,18 @@ class Predictor():
         return pred
     
     def prioritize_one_vs_all(self,node_index,target_index=None,return_df=False,apply_sigmoid=True):
-        """Index: node_index"""
+        """
+        Calcula la probabilidad de enlace entre el nodo "node_index" y:
+        Si target_index = None -> todos los nodos del tipo de target que corresponde
+        Si target_index = lista de node_index -> todos los nodos de esta lista
+
+        Como los "node_index" del grafo son únicos no falta especificar de que tipo es el source y el target.
+        Es importante usar los "node_index" del dataframe original y no los indices tensoriales para evitar confusión,
+        esta clase los mapea internamente.
+        
+        Devuelve una lista ordenada de los target_index priorizados (de mayor proba a menor) y otra lista con los puntajes correspondientes
+        """
+
         source_type = self.df.loc[node_index,"node_type"]
         tensor_index = self.df.loc[node_index,"tensor_index"]
         
@@ -119,7 +137,10 @@ class Predictor():
         return ranked_predictions
     
     def predict_supervision_edges(self,data, edge_type, return_dataframe=True):
-        """If return_dataframe_==True, returns dataframe with edges, prediction scores and labels. Else, returns predicted scores tensor"""
+        """
+        Si queremos calcular la proba de enlace para los datos en el conjunto de test en lugar de pasarle nodos elegidos manualmente.
+        If return_dataframe_==True, returns dataframe with edges, prediction scores and labels. Else, returns predicted scores tensor
+        """
         src_type, trg_type = edge_type[0],edge_type[2]
         x_source = self.encodings[src_type]
         x_target = self.encodings[trg_type]
