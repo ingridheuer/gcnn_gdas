@@ -2,7 +2,19 @@ import pandas as pd
 import torch
 
 
-class MappedDataset():
+class MappedDataset:
+    """
+    Utilidad para manejar los mapeos de índices entre los dataframes originales y los objetos de torch.
+
+    heterodata: objeto de torch_geometric, alguno de los conjuntos del split (train,val,test)
+    node_map: diccionario que contiene la equivalencia entre node_index del dataset y tensor_index de heterodata
+    prediction_edge_type: el tipo de enlace que queremos mapear (arma un df para cada tipo, me pareció comodo porque
+    para evaluar el modelo solo necesitamos ver un tipo de enlace)
+
+    MappedDataset.dataframe contiene todos los enlaces que están en heterodata indexados por "node_index", osea el índice original
+    del dataset. En las columnas está el sub-tipo de enlace: propagación o supervisión y la etiqueta si es de supervisión.
+    """
+
     def __init__(self, heterodata, node_map, prediction_edge_type):
         self.prediction_edge_type = prediction_edge_type
         self.node_map = node_map
@@ -22,7 +34,12 @@ class MappedDataset():
         mapped_src = [src_map[n] for n in sources]
         mapped_trg = [dst_map[n] for n in targets]
 
-        return {f"{src_type}_source": mapped_src, f"{dst_type}_target": mapped_trg, f"torch_{src_type}_index_source": sources, f"torch_{dst_type}_index_target": targets}
+        return {
+            f"{src_type}_source": mapped_src,
+            f"{dst_type}_target": mapped_trg,
+            f"torch_{src_type}_index_source": sources,
+            f"torch_{dst_type}_index_target": targets,
+        }
 
     def _reverse_map_heterodata(self, data):
         """Maps full edge data from pyg Heterodata back into the original node indices from the dataframe"""
@@ -38,7 +55,8 @@ class MappedDataset():
                 labeled_edges_tensor = data[edge_type]["edge_label_index"]
                 # labeled_edges_list = tensor_to_edgelist(labeled_edges_tensor)
                 mapped_labeled_edges_list = self._reverse_map_tensor(
-                    labeled_edges_tensor, edge_type)
+                    labeled_edges_tensor, edge_type
+                )
                 edge_labels = data[edge_type]["edge_label"].tolist()
 
                 type_dict["supervision_edges"] = mapped_labeled_edges_list
@@ -53,8 +71,9 @@ class MappedDataset():
         e_dict = self.edge_dict[self.prediction_edge_type]
         supervision_edges = pd.DataFrame(e_dict["supervision_edges"])
 
-        labeled_edges = pd.concat([supervision_edges, pd.DataFrame(
-            e_dict["supervision_labels"])], axis=1).rename(columns={0: "label"})
+        labeled_edges = pd.concat(
+            [supervision_edges, pd.DataFrame(e_dict["supervision_labels"])], axis=1
+        ).rename(columns={0: "label"})
         msg_passing_edges = pd.DataFrame(e_dict["message_passing_edges"])
 
         msg_passing_edges["edge_type"] = "message_passing"
@@ -66,25 +85,34 @@ class MappedDataset():
         return total_df
 
 
-class Predictor():
+class Predictor:
     """
     Utilidad para hacer predicciones rápidas una vez que ya tenemos los encodings calculados.
     Calcula la probabilidad de enlaces con inner_product_decoder, que es una similaridad producto interno más una logística.
     Se encarga de mapear los indices del grafo ("node_index") a los índices tensoriales que usan los datos de torch.
-    Esto es para evitar ambiguedades ya que los indices tensoriales no son únicos (hay una enfermedad 0 y un gen 0), 
+    Esto es para evitar ambiguedades ya que los indices tensoriales no son únicos (hay una enfermedad 0 y un gen 0),
     mientras que los "node_index" sí son únicos.
+
+    node_df debe contener los indices del grafo "node_index" y su equivalencia a indice de torch "tensor_index" 
+    para que pueda hacer el mapeo
     """
 
     def __init__(self, node_df, encodings_dict):
-        assert node_df.index.name == "node_index", f"df index must be node_index, not {node_df.index.name}."
+        assert (
+            node_df.index.name == "node_index"
+        ), f"df index must be node_index, not {node_df.index.name}."
 
         self.df = node_df
         self.encodings = encodings_dict
         # self.tensor_map = {"disease":self.df[self.df.node_type == "disease"].tensor_index.to_dict(), "gene_protein":self.df[self.df.node_type == "gene_protein"].tensor_index.to_dict()}
         gene_index = torch.tensor(
-            self.df[self.df.node_type == "gene_protein"]["tensor_index"].index.values)
+            self.df[self.df.node_type ==
+                    "gene_protein"]["tensor_index"].index.values
+        )
         disease_index = torch.tensor(
-            self.df[self.df.node_type == "disease"]["tensor_index"].index.values)
+            self.df[self.df.node_type ==
+                    "disease"]["tensor_index"].index.values
+        )
         self.node_index_dict = {
             "gene_protein": gene_index, "disease": disease_index}
 
@@ -96,7 +124,9 @@ class Predictor():
 
         return pred
 
-    def prioritize_one_vs_all(self, node_index, target_index=None, return_df=False, apply_sigmoid=True):
+    def prioritize_one_vs_all(
+        self, node_index, target_index=None, return_df=False, apply_sigmoid=True
+    ):
         """
         Calcula la probabilidad de enlace entre el nodo "node_index" y:
         Si target_index = None -> todos los nodos del tipo de target que corresponde
@@ -123,28 +153,35 @@ class Predictor():
         if target_index is None:
             target_matrix = self.encodings[target_type]
             predicted_edges = self.inner_product_decoder(
-                source_vector, target_matrix, apply_sigmoid)
+                source_vector, target_matrix, apply_sigmoid
+            )
             ranked_scores, ranked_indices = torch.sort(
                 predicted_edges, descending=True)
             ranked_node_index = self.node_index_dict[target_type][ranked_indices]
         else:
-            assert all(self.df.loc[target_index, "node_type"].values ==
-                       target_type), f"Los indices target no corresponden a nodos del tipo {target_type}"
+            assert all(
+                self.df.loc[target_index, "node_type"].values == target_type
+            ), f"Los indices target no corresponden a nodos del tipo {target_type}"
             target_tensor_index = self.df.loc[target_index,
                                               "tensor_index"].values
             target_matrix = self.encodings[target_type][target_tensor_index]
             predicted_edges = self.inner_product_decoder(
-                source_vector, target_matrix, apply_sigmoid)
+                source_vector, target_matrix, apply_sigmoid
+            )
             ranked_scores, ranked_indices = torch.sort(
                 predicted_edges, descending=True)
-            ranked_node_index = self.node_index_dict[target_type][target_tensor_index[ranked_indices]]
+            ranked_node_index = self.node_index_dict[target_type][
+                target_tensor_index[ranked_indices]
+            ]
 
         if return_df:
             results = pd.DataFrame(
-                {"score": ranked_scores, "node_index": ranked_node_index})
+                {"score": ranked_scores, "node_index": ranked_node_index}
+            )
             node_names = self.df[self.df.node_type == target_type]["node_name"]
             ranked_predictions = pd.merge(
-                results, node_names, left_on="node_index", right_index=True)
+                results, node_names, left_on="node_index", right_index=True
+            )
             ranked_predictions.index.name = "rank"
 
         else:
@@ -154,8 +191,10 @@ class Predictor():
 
     def predict_supervision_edges(self, data, edge_type, return_dataframe=True):
         """
-        Si queremos calcular la proba de enlace para los datos en el conjunto de test en lugar de pasarle nodos elegidos manualmente.
-        If return_dataframe_==True, returns dataframe with edges, prediction scores and labels. Else, returns predicted scores tensor
+        Si queremos calcular la proba de enlace para los datos en el conjunto de
+        test en lugar de pasarle nodos elegidos manualmente.
+        If return_dataframe_==True, returns dataframe with edges,
+        prediction scores and labels. Else, returns predicted scores tensor
         """
         src_type, trg_type = edge_type[0], edge_type[2]
         x_source = self.encodings[src_type]
@@ -170,8 +209,14 @@ class Predictor():
         pred = self.inner_product_decoder(emb_nodes_source, emb_nodes_target)
         if return_dataframe:
             labels = data.edge_label_dict[edge_type].numpy()
-            df = pd.DataFrame({"torch_gene_protein_index": source_index,
-                              "torch_disease_index": target_index, "score": pred, "label": labels})
+            df = pd.DataFrame(
+                {
+                    "torch_gene_protein_index": source_index,
+                    "torch_disease_index": target_index,
+                    "score": pred,
+                    "label": labels,
+                }
+            )
             return df
         else:
             return pred
@@ -183,10 +228,19 @@ class Predictor():
         node_type = self.df.loc[node_index, "node_type"]
         y_type = "disease" if node_type == "gene_protein" else "gene_protein"
 
-        new_edges = set(mapped_val[(mapped_val.edge_type == "supervision") & (
-            mapped_val.label == 1) & (mapped_val[node_type] == node_index)][y_type].values)
-        seen_edges = set(mapped_train[(mapped_train.label != 0) & (
-            mapped_train[node_type] == node_index)][y_type].values)
+        new_edges = set(
+            mapped_val[
+                (mapped_val.edge_type == "supervision")
+                & (mapped_val.label == 1)
+                & (mapped_val[node_type] == node_index)
+            ][y_type].values
+        )
+        seen_edges = set(
+            mapped_train[
+                (mapped_train.label != 0) & (
+                    mapped_train[node_type] == node_index)
+            ][y_type].values
+        )
 
         results = {"seen_edges": len(seen_edges), "new_edges": len(new_edges)}
 
