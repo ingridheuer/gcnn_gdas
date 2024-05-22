@@ -119,7 +119,10 @@ class Model(torch.nn.Module):
 
     def loss(self, prediction_dict, label_dict):
         loss = 0
-        for edge_type, pred in prediction_dict.items():
+        for edge_type, pred in prediction_dict.items(): 
             y = label_dict[edge_type]
-            loss += self.loss_fn(pred, y.type(pred.dtype))
+            loss += self.loss_fn(pred, y.type(pred.dtype)) 
+            #si num edge_types = 1, es simplemente loss de ese edge type
+            #si hay varios edge_types DE SUPERVISION tengo que calcular el error por separado y acumularlo
+            #en el caso GDA es un unico edge type (gda)
         return loss

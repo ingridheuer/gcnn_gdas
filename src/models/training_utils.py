@@ -78,7 +78,7 @@ def full_test(model,data,k,global_score=True):
   
   return metrics
 
-def plot_training_stats(title, train_losses,val_losses, train_metric,val_metric,metric_str):
+def plot_training_stats(title, train_losses, val_losses, train_metric, val_metric, metric_str):
 
   fig, ax = plt.subplots(figsize=(8,5))
   ax2 = ax.twinx()
