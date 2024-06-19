@@ -22,13 +22,13 @@ for seed in seeds:
     datasets, node_map = training_utils.load_data(data_folder+f"seed_{seed}/",load_test=True)
     data.append(datasets)
 #%%
-def get_edge_sets(heterodata,node_map=node_map):
-    mapped = prediction_utils.MappedDataset(heterodata,node_map,("gene_protein","gda","disease"))
+def get_edge_sets(heterodata, node_map=node_map):
+    mapped = prediction_utils.MappedDataset(heterodata, node_map,("gene_protein", "gda", "disease"))
     mapped_df = mapped.dataframe
 
-    mapped_df["edges"] = mapped_df[["gene_protein","disease"]].values.tolist()
+    mapped_df["edges"] = mapped_df[["gene_protein_source","disease_target"]].values.tolist()
     mapped_df["edges"] = mapped_df.edges.apply(lambda x: tuple(x))
-    supervision_edges = set(mapped_df[mapped_df.edge_type == "supervision"].edges.values)
+    supervision_edges = set(mapped_df[(mapped_df.edge_type == "supervision") & (mapped_df.label == 1)].edges.values)
     propagation_edges = set(mapped_df[mapped_df.edge_type == "message_passing"].edges.values)
 
     return mapped_df,propagation_edges,supervision_edges
@@ -54,7 +54,6 @@ for seed in data:
 # verifico leaks entre enlaces de supervision de mismo seed
 # se generan leaks negativos entre val y test, del orden del 0.05% de los enlaces totales
 # esto es esperable por como se genera la muestra, la contribución no es significativa
-# falta verificar que son siempre negativos
 train_val_leak = []
 train_test_leak = []
 val_test_leak = []
@@ -77,7 +76,7 @@ results_df = pd.DataFrame(results)
 results_df["Compartidos %"] = round((results_df["Compartidos"]*100)/len(supervision_sets[0][1]),2)
 results_df["Total enlaces de supervisión en test"] = [len(x[2]) for x in supervision_sets]
 results_df["Total enlaces de supervisión en val"] = [len(x[1]) for x in supervision_sets]
-results_df.to_csv("../../reports/verify_splits/vt_leak_check.csv")
+# results_df.to_csv("../../reports/verify_splits/vt_leak_check.csv")
 
 #%%
 aver = list(val_test_leak[0])
