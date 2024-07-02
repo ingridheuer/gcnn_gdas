@@ -1,56 +1,65 @@
-# Redes convolucionales definidas en grafos para la predicción de nuevas asociaciones gen-enfermedad
+# Redes neuronales definidas en grafos para la predicción de nuevas asociaciones gen-enfermedad
 
 Las secciones de integración de datos, análisis de red y de lenguaje natural se presentaron en el congreso [NetSci-x 2023](https://cnet.fi.uba.ar/netscix23/).
 ![poster_netsci](https://user-images.githubusercontent.com/61297025/236244985-1911d0fb-7dee-4094-b0f5-44747ba50e21.jpg)
 
-
-Project Organization
+Organización del Proyecto
 ------------
 
-    ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
+    ├── license
+    ├── Makefile                  <- Makefile with commands like `make data` or `make train`(TODO:)
+    ├── README.md                 
+    ├── data                      <- Este directorio no es público
+    │   ├── external              <- Datos de fuentes externas. Bases de datos originales como DisGeNET y HIPPIE (TODO: completar references)
+    │   ├── interim               <- Pasos intermedios en procesamiento de datos y mapeos de vocabulario manuales.
+    │   └── processed             <- Dataset final, contiene el grafo procesado y sus atributos.
+    │       
+    ├── docs                      <- A default Sphinx project; see sphinx-doc.org for details (TODO:)
+    │       
+    ├── models                    <- Evaluación y descripción del modelo final
+    │       
+    ├── exploration               <- Exploración de datos, notebooks y algunos scripts experimentales (no definitivos)
+    |   └── run_in_colab          <- Scripts para correr en Google Colab - Caminatas aleatorias en espacio de hiperparámetros
+    │       
+    ├── references                <- Data dictionaries, manuals, and all other explanatory materials. (TODO:)
+    │       
+    ├── reports                   <- Gráficos, tablas, etc. Este directorio no es público.
+    │       
+    ├── requirements.txt          <- Requisitos para reproducir el entorno. Generado con `pip freeze > requirements.txt`
+    │       
+    ├── setup.py                  <- makes project pip installable (pip install -e .) so src can be imported (TODO:)
     │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
     │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
     │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
+    ├── src                       <- Código fuente del proyecto.
+    │   │       
+    │   ├── data                  <- Integración y curado de datos, split del dataset.
+    │   │          
+    │   │       
+    │   ├── features              <- Generación de atributos de nodos 
     │   │   └── build_features.py
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
+    │   ├── models                <- Modelos, scripts para entrenar y evaluar modelos, scripts para hacer predicciones con modelos.
+    │   │   │                 
+    │   │   ├── base_model.py     <- Configurar y generar modelos
+    │   │   ├── training_utils.py <- Funciones de entrenamiento y evaluación. Implementación de muestreo negativo. Utilidades para cargar datos.
+    │   │   ├── prediction.py     <- Utilidades para hacer predicciones y mapear datasets entre formato torch-geometric y pandas. 
+    │   │   └── final_model.py    <- Implementación del modelo final 
     │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
+    │   ├── network_analysis      <- Análisis de redes complejas
+    │   │
+    │   ├── NLP_analysis          <- Procesamiento y análisis de descripciones clínicas de nodos enfermedad
+    │   │   │                 
+    │   │   ├── preprocess_corpus.py    <- Preprocesamiento de descripciones clínicas
+    │   │   ├── vectorize.py            <- Generación de matrices document-term con TF-IDF
+    │   │   └── LSA_dim_reduction.py    <- Latent Semantic Analysis
+    │   │
+    │   │
+    │   └── visualization  <- Visualizaciones
+    │       ├── visualize_clusters.py     <- Buscador de clusters y pathways a partir de palabras clave (síntomas o partes del cuerpo)
+    │       └── visualize_embeddings.py   <- Ver el espacio latente generado por el modelo
     │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
+    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io (TODO:)
 
 
 --------
