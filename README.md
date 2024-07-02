@@ -1,20 +1,20 @@
 # Redes neuronales definidas en grafos para la predicción de nuevas asociaciones gen-enfermedad
 
-Las secciones de integración de datos, análisis de red y de lenguaje natural se presentaron en el congreso [NetSci-x 2023](https://cnet.fi.uba.ar/netscix23/).
+Exploración e implementación de Graph Neural Networks para hallar asociaciones entre genes y enfermedades de origen genético en bases de datos biomédicas.
+
+Las secciones de integración de datos, análisis de redes complejas y procesamiento lenguaje natural se presentaron en el congreso [NetSci-x 2023](https://cnet.fi.uba.ar/netscix23/).
 ![poster_netsci](https://user-images.githubusercontent.com/61297025/236244985-1911d0fb-7dee-4094-b0f5-44747ba50e21.jpg)
 
 Organización del Proyecto
 ------------
 
     ├── license
-    ├── Makefile                  <- Makefile with commands like `make data` or `make train`(TODO:)
     ├── README.md                 
     ├── data                      <- Este directorio no es público
     │   ├── external              <- Datos de fuentes externas. Bases de datos originales como DisGeNET y HIPPIE 
     │   ├── interim               <- Pasos intermedios en procesamiento de datos y mapeos de vocabulario manuales.
     │   └── processed             <- Dataset final, contiene el grafo procesado y sus atributos.
     │       
-    ├── docs                      <- A default Sphinx project; see sphinx-doc.org for details (TODO:)
     │       
     ├── models                    <- Evaluación y descripción del modelo final
     │       
@@ -27,8 +27,6 @@ Organización del Proyecto
     │       
     ├── requirements.txt          <- Requisitos para reproducir el entorno. Generado con `pip freeze > requirements.txt`
     │       
-    ├── setup.py                  <- makes project pip installable (pip install -e .) so src can be imported (TODO:)
-    │
     │
     │
     ├── src                       <- Código fuente del proyecto.
@@ -57,9 +55,8 @@ Organización del Proyecto
     │   │
     │   └── visualization  <- Visualizaciones
     │       ├── visualize_clusters.py     <- Buscador de clusters y pathways a partir de palabras clave (síntomas o partes del cuerpo)
-    │       └── visualize_embeddings.py   <- Ver el espacio latente generado por el modelo
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io (TODO:)
+            └── visualize_embeddings.py   <- Ver el espacio latente generado por el modelo
+    
 
 
 --------
