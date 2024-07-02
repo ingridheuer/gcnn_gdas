@@ -10,7 +10,7 @@ Organización del Proyecto
     ├── Makefile                  <- Makefile with commands like `make data` or `make train`(TODO:)
     ├── README.md                 
     ├── data                      <- Este directorio no es público
-    │   ├── external              <- Datos de fuentes externas. Bases de datos originales como DisGeNET y HIPPIE (TODO: completar references)
+    │   ├── external              <- Datos de fuentes externas. Bases de datos originales como DisGeNET y HIPPIE 
     │   ├── interim               <- Pasos intermedios en procesamiento de datos y mapeos de vocabulario manuales.
     │   └── processed             <- Dataset final, contiene el grafo procesado y sus atributos.
     │       
@@ -21,7 +21,7 @@ Organización del Proyecto
     ├── exploration               <- Exploración de datos, notebooks y algunos scripts experimentales (no definitivos)
     |   └── run_in_colab          <- Scripts para correr en Google Colab - Caminatas aleatorias en espacio de hiperparámetros
     │       
-    ├── references                <- Data dictionaries, manuals, and all other explanatory materials. (TODO:)
+    ├── references                <- Data dictionaries, manuals, and all other explanatory materials. (TODO: por ahora solo fuentes originales de los datos)
     │       
     ├── reports                   <- Gráficos, tablas, etc. Este directorio no es público.
     │       
