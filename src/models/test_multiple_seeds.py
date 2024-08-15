@@ -40,17 +40,6 @@ for seed in seeds:
     model.load_state_dict(weights)
     models.append(model)
 #%%
-#test models
-# aucs = []
-# for model,test_dataset in zip(models,test_data):
-#     auc = training_utils.test(model,test_dataset)
-#     aucs.append(auc)
-
-# test_auc, test_std = np.mean(aucs), np.std(aucs)
-
-# with open(f'{models_folder}test_auc.txt', 'w') as f:
-#     f.write(f"mean test AUROC:{round(test_auc,3)} +- {round(test_std,3)}. \n Num seeds: {len(data)} \n AUCs: {aucs}")
-#%%
 def full_eval(data,node_df):
     encodings_dict = training_utils.get_encodings(model,data)
     predictor = prediction_utils.Predictor(node_df,encodings_dict)
@@ -68,7 +57,6 @@ def full_eval(data,node_df):
 
     return {"auc":auc, "acc":acc, "ap":ap, "precision":precision, "recall":recall}
 
-# mean AUROC:0.899 +- 0.002. /n Num seeds: 5
 all_results = []
 for seed in test_data:
     eval_results = full_eval(seed,node_df)
