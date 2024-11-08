@@ -1,6 +1,13 @@
-# Redes neuronales definidas en grafos para la predicción de nuevas asociaciones gen-enfermedad
+# Redes neuronales definidas en grafos para la priorización de asociaciones gen-enfermedad
 
-Exploración e implementación de Graph Neural Networks para hallar asociaciones entre genes y enfermedades de origen genético en bases de datos biomédicas.
+El surgimiento de fenotipos patológicos no se debe a un suceso aislado, sino a la interacción de múltiples mecanismos a nivel molecular que luego se manifiestan, a mayor escala, como síntomas de una enfermedad. La teoría de grafos y sistemas complejos presenta una oportunidad para representar estos sistemas biológicos como redes compuestas de nodos y enlaces.
+
+Con el rápido avance de la tecnología, surge un interés en aplicar técnicas de inteligencia artificial a este tipo de sistemas. A raíz de esto surgen las Graph Neural Networks o GNNs, capaces de aplicarse a estructuras de datos complejas como grafos y redes.
+
+En este trabajo se exlpora, por un lado, la integración y el curado de un grafo de conocimiento biomédico enfocado en asociaciones entre mutaciones genéticas y enfermedades, junto con información biológica relevante. En esta parte del trabajo se aborda el análisis del lenguaje involucrado en descripciones de enfermedades, junto con el desarrollo de una base para posibles sistemas de recuperación de información y RAGs.
+
+Por otro lado, se desarrollan e implementan modelos predictivos basados en Graph Neural Networks para realizar predicciones sobre potenciales asociaciones entre mutaciones genéticas y enfermedades, en base a la información disponible en la red. Además se desarrolló un marco de optimización de arquitectura basado en el algoritmo de caminatas aleatorias de Metropolis-Hastings.
+
 
 Las secciones de integración de datos, análisis de redes complejas y procesamiento lenguaje natural se presentaron en el congreso [NetSci-x 2023](https://cnet.fi.uba.ar/netscix23/).
 ![poster_netsci](https://user-images.githubusercontent.com/61297025/236244985-1911d0fb-7dee-4094-b0f5-44747ba50e21.jpg)
